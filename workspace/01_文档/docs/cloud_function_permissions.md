@@ -20,6 +20,7 @@
 | `reviewAnnotationTask` | annotator, admin | `annotation_tasks` | `annotation_tasks` | 更新标注状态 |
 | `queryStudyResult` | viewer, researcher, admin | `imaging_studies`,`ai_inference_results` | 无 | 只读查询 |
 | `inferWithImage` | researcher, admin | `imaging_studies` | `ai_inference_results`,`inference_artifacts` | 上传影像并返回风险分数与Grad-CAM热图 |
+| `infer` | researcher, admin | `imaging_studies` | `ai_inference_results` | 文本/结构化推理，受API Key与限流保护 |
 
 ## 4. 安全策略
 
@@ -27,6 +28,8 @@
 - 默认拒绝策略：未显式授权即拒绝访问
 - 写操作必须记录审计日志（操作者、时间、对象、变更摘要）
 - 导出类能力仅`admin`可触发，且需二次确认
+- 推理接口统一要求`X-API-Key`鉴权，缺失返回401、无效返回403
+- 推理接口默认按“API Key + IP”维度限流，超限返回429
 
 ## 5. 风险与后续动作
 
@@ -41,3 +44,4 @@
 - 2026-04-16：初始化云函数权限文档（v1.0）
 - 2026-04-16：新增`inferWithImage`权限项，补充可解释产物写入权限（v1.1）
 - 2026-04-16：明确`inferWithImage`产物为Grad-CAM热图（v1.2）
+- 2026-04-16：新增`infer`权限项，补充API Key鉴权与限流策略（v1.3）

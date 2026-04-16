@@ -64,6 +64,21 @@ CSV列规范：
 - 文本+结构化推理：`POST /infer`
 - 图片上传推理：`POST /infer_with_image`（返回风险分数与Grad-CAM热图路径）
 
+### 接口安全（鉴权+限流）
+
+- 已启用API Key鉴权，请在请求头中传：`X-API-Key`
+- 服务端环境变量：`MEDFUSE_API_KEYS=dev-key,demo-key`
+- 推理接口默认限流：每个`API Key + IP`每分钟60次（可在`default.yaml`调节）
+- 超限返回：`429`；缺失Key返回：`401`；无效Key返回：`403`
+
+### 安全验收清单（实测）
+
+1. 缺失API Key请求`/infer` -> 返回`401`  
+2. 错误API Key请求`/infer` -> 返回`403`  
+3. 正确API Key请求`/infer` -> 返回`200`并输出风险分数  
+4. 连续高频请求`/infer`超过阈值 -> 返回`429`  
+5. `GET /health`在公开配置下可正常返回`200`
+
 ## 深色前端页面
 
 - 演示页面：`frontend_dark.html`

@@ -5,11 +5,12 @@ from typing import List
 import numpy as np
 import torch
 import torch.nn.functional as F
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Request, UploadFile
 from PIL import Image
 from pydantic import BaseModel
 
 from src.config.utils import load_config
+from src.api.security import require_auth_and_rate_limit
 from src.data.dataset import tokenize_text_to_ids
 from src.models.mmca_net import MMCANet
 
@@ -33,6 +34,17 @@ if ckpt.exists():
     model.load_state_dict(torch.load(ckpt, map_location="cpu"))
 model.eval()
 labels = cfg["infer"]["class_names"]
+security_enabled = cfg.get("security", {}).get("enabled", True)
+rate_limit_per_minute = cfg.get("security", {}).get("rate_limit_per_minute", 60)
+public_health = cfg.get("security", {}).get("public_health", True)
+
+
+def _auth_dep(request: Request) -> str:
+    return require_auth_and_rate_limit(
+        request=request,
+        enabled=security_enabled,
+        rate_limit_per_minute=rate_limit_per_minute,
+    )
 
 
 def _prepare_image_tensor(content: bytes, image_size: int) -> torch.Tensor:
@@ -104,12 +116,21 @@ def _save_gradcam_heatmap(image_tensor: torch.Tensor, cam: np.ndarray, file_stem
 
 
 @app.get("/health")
-def health() -> dict:
+def health(request: Request) -> dict:
+    if not public_health:
+        require_auth_and_rate_limit(
+            request=request,
+            enabled=security_enabled,
+            rate_limit_per_minute=rate_limit_per_minute,
+        )
     return {"状态": "正常", "服务": "MedFuse-X"}
 
 
 @app.post("/infer")
-def infer(req: InferenceRequest) -> dict:
+def infer(
+    req: InferenceRequest,
+    _api_key: str = Depends(_auth_dep),
+) -> dict:
     text_ids = tokenize_text_to_ids(req.text, cfg["model"]["text_max_len"], cfg["model"]["text_vocab_size"])
     text_ids = torch.tensor([text_ids], dtype=torch.long)
 
@@ -131,6 +152,7 @@ async def infer_with_image(
     image_file: UploadFile = File(..., description="胸片图像文件"),
     text: str = Form(default="", description="报告文本或主诉"),
     struct_features: str = Form(..., description="结构化特征，逗号分隔"),
+    _api_key: str = Depends(_auth_dep),
 ) -> dict:
     parts = [x.strip() for x in struct_features.split(",") if x.strip()]
     if len(parts) != cfg["data"]["num_struct_features"]:

@@ -37,3 +37,8 @@ infer:
     - 胸腔积液
     - 气胸
   heatmap_dir: ../03_数据/outputs/heatmaps
+
+security:
+  enabled: true
+  rate_limit_per_minute: 60
+  public_health: true

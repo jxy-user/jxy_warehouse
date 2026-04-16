@@ -60,6 +60,17 @@
   - `artifact_uri` (string)
   - `created_at` (datetime)
 
+### 2.6 `security_access_logs`
+- 用途：记录接口鉴权与限流事件（审计与风控）
+- 主键：`log_id`
+- 字段：
+  - `log_id` (string, unique)
+  - `endpoint` (string)
+  - `client_ip` (string)
+  - `api_key_hash` (string)
+  - `result` (string: pass/unauthorized/forbidden/rate_limited)
+  - `created_at` (datetime)
+
 ## 3. 索引与性能建议
 
 - `patient_uuid`、`study_id`、`created_at` 建立组合索引
@@ -77,3 +88,4 @@
 - 2026-04-16：初始化数据库文档（v1.0）
 - 2026-04-16：新增`inference_artifacts`集合，支持热图等可解释产物存储（v1.1）
 - 2026-04-16：将热图类型明确为`gradcam`，对齐当前推理接口实现（v1.2）
+- 2026-04-16：新增`security_access_logs`集合，支持鉴权与限流审计（v1.3）

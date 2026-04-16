@@ -232,6 +232,10 @@
         return "http://127.0.0.1:8000";
       }
 
+      function getApiKey() {
+        return localStorage.getItem("medfuse_api_key") || "demo-key";
+      }
+
       async function sendQuestion() {
         const question = document.getElementById("questionInput").value.trim();
         const file = document.getElementById("imageFile").files[0];
@@ -259,7 +263,11 @@
         statusEl.textContent = "正在进行影像辅助分析...";
 
         try {
-          const resp = await fetch(getApiBaseUrl() + "/infer_with_image", { method: "POST", body: fd });
+          const resp = await fetch(getApiBaseUrl() + "/infer_with_image", {
+            method: "POST",
+            headers: { "X-API-Key": getApiKey() },
+            body: fd,
+          });
           const data = await resp.json();
           if (!resp.ok || data.错误) throw new Error(data.错误 || "分析失败");
 
