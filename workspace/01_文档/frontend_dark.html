@@ -135,10 +135,6 @@
             <label for="imageFile">胸片图片（可选）</label>
             <input id="imageFile" type="file" accept="image/*" />
           </div>
-          <div class="field">
-            <label for="apiBaseUrl">接口地址（默认即可）</label>
-            <input id="apiBaseUrl" value="http://127.0.0.1:8000" />
-          </div>
           <div class="actions">
             <button class="primary" onclick="sendQuestion()">发送问题</button>
             <button class="ghost" onclick="clearChat()">清空</button>
@@ -204,7 +200,7 @@
       }
 
       function getApiBaseUrl() {
-        return (document.getElementById("apiBaseUrl").value || "").trim().replace(/\/+$/, "") || "http://127.0.0.1:8000";
+        return "http://127.0.0.1:8000";
       }
 
       async function sendQuestion() {
