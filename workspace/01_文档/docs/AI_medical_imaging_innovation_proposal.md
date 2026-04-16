@@ -42,11 +42,11 @@
 
 ## 详细实施文档索引
 
-- 病种与数据源：`docs/01_topic_scope_and_datasets.md`
-- 数据治理与标注：`docs/02_data_governance_and_labeling_spec.md`
-- 模型与离线评测：`docs/03_multimodal_baseline_and_offline_eval.md`
-- 小样本与轻量化：`docs/04_fewshot_and_lightweight_deployment.md`
-- 结题交付包：`docs/05_final_deliverables_package.md`
-- 云数据库文档：`docs/cloud_database_design.md`
-- 云函数权限文档：`docs/cloud_function_permissions.md`
-- 问题修改总结：`docs/problem_fix_summary.md`
+- 病种与数据源：`01_topic_scope_and_datasets.md`
+- 数据治理与标注：`02_data_governance_and_labeling_spec.md`
+- 模型与离线评测：`03_multimodal_baseline_and_offline_eval.md`
+- 小样本与轻量化：`04_fewshot_and_lightweight_deployment.md`
+- 结题交付包：`05_final_deliverables_package.md`
+- 云数据库文档：`cloud_database_design.md`
+- 云函数权限文档：`cloud_function_permissions.md`
+- 问题修改总结：`problem_fix_summary.md`

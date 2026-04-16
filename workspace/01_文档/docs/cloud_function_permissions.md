@@ -19,7 +19,7 @@
 | `createAnnotationTask` | researcher, admin | `ai_inference_results` | `annotation_tasks` | 生成主动学习任务 |
 | `reviewAnnotationTask` | annotator, admin | `annotation_tasks` | `annotation_tasks` | 更新标注状态 |
 | `queryStudyResult` | viewer, researcher, admin | `imaging_studies`,`ai_inference_results` | 无 | 只读查询 |
-| `inferWithImage` | researcher, admin | `imaging_studies` | `ai_inference_results`,`inference_artifacts` | 上传影像并返回风险分数与热图 |
+| `inferWithImage` | researcher, admin | `imaging_studies` | `ai_inference_results`,`inference_artifacts` | 上传影像并返回风险分数与Grad-CAM热图 |
 
 ## 4. 安全策略
 
@@ -40,3 +40,4 @@
 
 - 2026-04-16：初始化云函数权限文档（v1.0）
 - 2026-04-16：新增`inferWithImage`权限项，补充可解释产物写入权限（v1.1）
+- 2026-04-16：明确`inferWithImage`产物为Grad-CAM热图（v1.2）

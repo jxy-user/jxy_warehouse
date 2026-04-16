@@ -2,7 +2,9 @@ import io
 from pathlib import Path
 from typing import List
 
+import numpy as np
 import torch
+import torch.nn.functional as F
 from fastapi import FastAPI, File, Form, UploadFile
 from PIL import Image
 from pydantic import BaseModel
@@ -49,6 +51,58 @@ def _save_heatmap_placeholder(image_tensor: torch.Tensor, file_stem: str) -> str
     return str(out_path).replace("\\", "/")
 
 
+def _generate_gradcam(
+    image: torch.Tensor,
+    text_ids: torch.Tensor,
+    struct: torch.Tensor,
+    target_idx: int,
+) -> np.ndarray:
+    activations = []
+    gradients = []
+
+    def _forward_hook(_module, _inputs, output):
+        activations.append(output)
+
+    def _backward_hook(_module, _grad_input, grad_output):
+        gradients.append(grad_output[0])
+
+    target_layer = model.image_encoder.backbone[2]
+    handle_fwd = target_layer.register_forward_hook(_forward_hook)
+    handle_bwd = target_layer.register_full_backward_hook(_backward_hook)
+
+    model.zero_grad(set_to_none=True)
+    logits = model(image, text_ids, struct)
+    score = logits[0, target_idx]
+    score.backward()
+
+    handle_fwd.remove()
+    handle_bwd.remove()
+
+    grad = gradients[0]
+    act = activations[0]
+    weights = grad.mean(dim=(2, 3), keepdim=True)
+    cam = (weights * act).sum(dim=1, keepdim=True)
+    cam = F.relu(cam)
+    cam = F.interpolate(cam, size=(cfg["data"]["image_size"], cfg["data"]["image_size"]), mode="bilinear")
+    cam = cam.squeeze().detach().cpu().numpy()
+    cam = (cam - cam.min()) / (cam.max() - cam.min() + 1e-8)
+    return cam
+
+
+def _save_gradcam_heatmap(image_tensor: torch.Tensor, cam: np.ndarray, file_stem: str) -> str:
+    gray = (image_tensor.squeeze().detach().cpu().numpy() * 255).astype("uint8")
+    red = (cam * 255).astype("uint8")
+    green = np.zeros_like(red)
+    blue = np.zeros_like(red)
+    heat_color = np.stack([red, green, blue], axis=-1)
+    base_rgb = np.stack([gray, gray, gray], axis=-1)
+    overlay = (0.6 * base_rgb + 0.4 * heat_color).astype("uint8")
+    heatmap = Image.fromarray(overlay, mode="RGB")
+    out_path = heatmap_dir / f"{file_stem}_gradcam.png"
+    heatmap.save(out_path)
+    return str(out_path).replace("\\", "/")
+
+
 @app.get("/health")
 def health() -> dict:
     return {"状态": "正常", "服务": "MedFuse-X"}
@@ -88,15 +142,15 @@ async def infer_with_image(
 
     content = await image_file.read()
     image = _prepare_image_tensor(content, cfg["data"]["image_size"])
-    heatmap_path = _save_heatmap_placeholder(image, Path(image_file.filename).stem or "sample")
-
-    with torch.no_grad():
-        logits = model(image, text_ids, struct)
-        probs = torch.sigmoid(logits).squeeze(0).tolist()
+    logits = model(image, text_ids, struct)
+    probs = torch.sigmoid(logits).squeeze(0).detach().cpu().tolist()
+    target_idx = int(np.argmax(probs))
+    cam = _generate_gradcam(image, text_ids, struct, target_idx)
+    heatmap_path = _save_gradcam_heatmap(image, cam, Path(image_file.filename).stem or "sample")
 
     return {
         "文件名": image_file.filename,
         "风险分数": dict(zip(labels, probs)),
         "热图路径": heatmap_path,
-        "说明": "当前为占位热图，后续可替换为Grad-CAM结果。",
+        "说明": f"已生成Grad-CAM热图，当前高风险类别为: {labels[target_idx]}",
     }

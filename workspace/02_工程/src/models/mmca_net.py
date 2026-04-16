@@ -14,9 +14,18 @@ class ImageEncoder(nn.Module):
         )
         self.proj = nn.Linear(32, embed_dim)
 
+    def forward_features(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        x = self.backbone[0](x)
+        x = self.backbone[1](x)
+        feature_map = self.backbone[2](x)
+        x = self.backbone[3](feature_map)
+        x = self.backbone[4](x)
+        pooled = x.flatten(1)
+        return feature_map, pooled
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        feat = self.backbone(x).flatten(1)
-        return self.proj(feat)
+        _, pooled = self.forward_features(x)
+        return self.proj(pooled)
 
 
 class TextEncoder(nn.Module):

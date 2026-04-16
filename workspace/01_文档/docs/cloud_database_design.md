@@ -51,12 +51,12 @@
   - `updated_at` (datetime)
 
 ### 2.5 `inference_artifacts`
-- 用途：推理中间产物（热图、解释文本、缩略图）
+- 用途：推理中间产物（Grad-CAM热图、解释文本、缩略图）
 - 主键：`artifact_id`
 - 字段：
   - `artifact_id` (string, unique)
   - `inference_id` (string, index)
-  - `artifact_type` (string: heatmap/explanation/thumbnail)
+  - `artifact_type` (string: gradcam/explanation/thumbnail)
   - `artifact_uri` (string)
   - `created_at` (datetime)
 
@@ -76,3 +76,4 @@
 
 - 2026-04-16：初始化数据库文档（v1.0）
 - 2026-04-16：新增`inference_artifacts`集合，支持热图等可解释产物存储（v1.1）
+- 2026-04-16：将热图类型明确为`gradcam`，对齐当前推理接口实现（v1.2）

@@ -8,8 +8,8 @@ data:
   num_struct_features: 6
   num_classes: 5
   train_split: 0.8
-  csv_path: data/samples/train.csv
-  image_root: data/images
+  csv_path: ../03_数据/data/samples/train.csv
+  image_root: ../03_数据/data/images
 
 model:
   image_in_channels: 1
@@ -36,4 +36,4 @@ infer:
     - 肺结节
     - 胸腔积液
     - 气胸
-  heatmap_dir: outputs/heatmaps
+  heatmap_dir: ../03_数据/outputs/heatmaps
