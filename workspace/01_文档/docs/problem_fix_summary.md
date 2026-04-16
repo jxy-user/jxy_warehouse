@@ -71,7 +71,7 @@
   - 新增“上传并推理/清空结果”交互按钮
   - 对接`/infer_with_image`并展示风险分数表
   - 新增Grad-CAM热图预览区域与错误提示
-- 影响范围：`workspace/02_工程/frontend_dark.html`、`workspace/01_文档/README.md`。
+- 影响范围：`workspace/01_文档/frontend_dark.html`、`workspace/01_文档/README.md`。
 - 回归验证：页面静态结构完整，前端请求流程与结果渲染逻辑已联通。
 - 预防动作：后续新增展示页面时，至少提供一个可执行的端到端交互闭环。
 
@@ -83,7 +83,7 @@
   - 新增“接口基地址”输入框与“保存接口地址”按钮
   - 健康检查与上传推理统一使用动态基地址
   - 使用localStorage持久化接口地址，刷新后自动恢复
-- 影响范围：`workspace/02_工程/frontend_dark.html`、`workspace/01_文档/README.md`。
+- 影响范围：`workspace/01_文档/frontend_dark.html`、`workspace/01_文档/README.md`。
 - 回归验证：页面加载后可读取已保存地址；健康检查与推理请求可随地址切换。
 - 预防动作：后续新增前端接口调用时，默认采用可配置基础URL，避免硬编码。
 
@@ -96,6 +96,6 @@
   - 新增历史读写逻辑（localStorage 持久化）
   - 保存地址、健康检查成功、推理成功时自动更新历史
   - 选择历史项后自动填充当前接口基地址
-- 影响范围：`workspace/02_工程/frontend_dark.html`、`workspace/01_文档/README.md`。
+- 影响范围：`workspace/01_文档/frontend_dark.html`、`workspace/01_文档/README.md`。
 - 回归验证：历史列表最多保留3项，且可快速切换并生效。
 - 预防动作：后续涉及环境切换的前端配置，优先提供历史与快速选择能力。
