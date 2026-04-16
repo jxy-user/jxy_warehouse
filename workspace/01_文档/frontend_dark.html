@@ -79,7 +79,6 @@
       .msg.ai { background: var(--panel-soft); border: 1px solid #2e3c66; }
       .msg.user { margin-left: auto; background: #203a7b; }
       .composer { padding: 12px; }
-      .field { margin-bottom: 8px; }
       label { display: block; color: var(--muted); margin-bottom: 6px; font-size: 13px; }
       input, textarea {
         width: 100%;
@@ -89,8 +88,37 @@
         color: var(--text);
         padding: 10px;
       }
-      textarea { min-height: 70px; resize: vertical; }
-      .actions { display: flex; gap: 8px; }
+      .composer-box {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #0d1429;
+        padding: 10px;
+      }
+      .composer-box textarea {
+        border: 0;
+        background: transparent;
+        min-height: 82px;
+        padding: 0;
+      }
+      .composer-box textarea:focus { outline: none; }
+      .composer-footer {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #243056;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .file-inline {
+        flex: 1;
+        min-width: 180px;
+      }
+      .file-inline input {
+        font-size: 12px;
+        padding: 6px;
+      }
+      .actions { margin-left: auto; display: flex; gap: 8px; }
       button {
         border: 1px solid transparent;
         border-radius: 10px;
@@ -127,17 +155,18 @@
         </div>
 
         <div class="composer">
-          <div class="field">
-            <label for="questionInput">问题描述</label>
-            <textarea id="questionInput" placeholder="例如：咳嗽三天，夜间加重，需要做什么检查？"></textarea>
-          </div>
-          <div class="field">
-            <label for="imageFile">胸片图片（可选）</label>
-            <input id="imageFile" type="file" accept="image/*" />
-          </div>
-          <div class="actions">
-            <button class="primary" onclick="sendQuestion()">发送问题</button>
-            <button class="ghost" onclick="clearChat()">清空</button>
+          <div class="composer-box">
+            <textarea id="questionInput" placeholder="请输入你的问题，例如：咳嗽三天，夜间加重，需要做什么检查？"></textarea>
+            <div class="composer-footer">
+              <div class="file-inline">
+                <label for="imageFile">附件（可选）</label>
+                <input id="imageFile" type="file" accept="image/*" />
+              </div>
+              <div class="actions">
+                <button class="primary" onclick="sendQuestion()">发送问题</button>
+                <button class="ghost" onclick="clearChat()">清空</button>
+              </div>
+            </div>
           </div>
           <div id="statusText" class="status">请选择左侧分类并输入问题。</div>
         </div>
