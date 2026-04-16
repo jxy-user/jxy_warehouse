@@ -1,0 +1,3 @@
+image_path,text,struct_0,struct_1,struct_2,struct_3,struct_4,struct_5,label_0,label_1,label_2,label_3,label_4
+sample1.png,双肺纹理增多 怀疑轻度感染,0.52,1,0,0,1,0,0,1,0,0,0
+sample2.png,左下肺可疑结节 建议复查,0.67,0,1,0,0,1,0,0,1,0,0

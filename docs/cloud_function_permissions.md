@@ -1,0 +1,42 @@
+# 云函数权限文档（首版）
+
+## 1. 目的
+
+规范云函数权限边界，避免越权访问与数据泄露。后续每新增或修改云函数，必须先检查并更新本文件。
+
+## 2. 角色定义
+
+- `admin`：系统管理员，具备配置与审计权限
+- `researcher`：算法研发，允许读取脱敏数据与写入推理结果
+- `annotator`：标注人员，仅可访问标注任务相关集合
+- `viewer`：只读查看，禁止导出敏感数据
+
+## 3. 云函数权限矩阵（初版）
+
+| 云函数名 | 允许角色 | 读权限 | 写权限 | 备注 |
+|---|---|---|---|---|
+| `submitInference` | researcher, admin | `imaging_studies` | `ai_inference_results` | 写入推理结果 |
+| `createAnnotationTask` | researcher, admin | `ai_inference_results` | `annotation_tasks` | 生成主动学习任务 |
+| `reviewAnnotationTask` | annotator, admin | `annotation_tasks` | `annotation_tasks` | 更新标注状态 |
+| `queryStudyResult` | viewer, researcher, admin | `imaging_studies`,`ai_inference_results` | 无 | 只读查询 |
+| `inferWithImage` | researcher, admin | `imaging_studies` | `ai_inference_results`,`inference_artifacts` | 上传影像并返回风险分数与热图 |
+
+## 4. 安全策略
+
+- 所有函数入口执行JWT/会话鉴权与角色校验
+- 默认拒绝策略：未显式授权即拒绝访问
+- 写操作必须记录审计日志（操作者、时间、对象、变更摘要）
+- 导出类能力仅`admin`可触发，且需二次确认
+
+## 5. 风险与后续动作
+
+- 风险1：测试环境权限过宽  
+  后续动作：测试/生产使用独立密钥与权限模板。
+
+- 风险2：函数新增后未同步权限文档  
+  后续动作：将“文档更新”加入PR检查清单。
+
+## 6. 变更记录
+
+- 2026-04-16：初始化云函数权限文档（v1.0）
+- 2026-04-16：新增`inferWithImage`权限项，补充可解释产物写入权限（v1.1）

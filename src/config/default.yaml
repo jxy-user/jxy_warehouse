@@ -1,0 +1,39 @@
+seed: 42
+device: cpu
+
+data:
+  mode: mock   # 可选: mock / csv
+  num_samples: 120
+  image_size: 224
+  num_struct_features: 6
+  num_classes: 5
+  train_split: 0.8
+  csv_path: data/samples/train.csv
+  image_root: data/images
+
+model:
+  image_in_channels: 1
+  image_embed_dim: 128
+  text_vocab_size: 1000
+  text_embed_dim: 128
+  text_max_len: 32
+  struct_hidden_dim: 64
+  fusion_dim: 128
+  num_classes: 5
+
+train:
+  batch_size: 8
+  epochs: 2
+  lr: 0.0005
+  weight_decay: 0.0001
+  save_path: checkpoints/mmca_net.pt
+
+infer:
+  checkpoint_path: checkpoints/mmca_net.pt
+  class_names:
+    - 正常
+    - 肺炎
+    - 肺结节
+    - 胸腔积液
+    - 气胸
+  heatmap_dir: outputs/heatmaps
