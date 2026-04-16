@@ -3,519 +3,175 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MedFuse-X 深色控制台</title>
+    <title>胸片简易分析</title>
     <style>
       :root {
         --bg: #0b1020;
         --panel: #121a2f;
-        --panel-soft: #1b2440;
         --text: #e8ecff;
         --muted: #9aa7d6;
         --primary: #5b8cff;
-        --primary-soft: #7fa2ff;
         --success: #31c48d;
         --danger: #f87171;
         --border: #2a355d;
       }
-
-      * {
-        box-sizing: border-box;
-      }
-
+      * { box-sizing: border-box; }
       body {
         margin: 0;
-        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-        background: radial-gradient(circle at top, #16213e 0%, var(--bg) 45%);
+        font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
         color: var(--text);
-        min-height: 100vh;
       }
-
-      .container {
-        width: min(1100px, 92vw);
-        margin: 0 auto;
-        padding: 36px 0 48px;
+      .wrap {
+        width: min(680px, 92vw);
+        margin: 24px auto 40px;
       }
-
-      .hero {
-        background: linear-gradient(135deg, #182446 0%, #101a33 100%);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 28px;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-      }
-
-      .title {
-        margin: 0;
-        font-size: 30px;
-        letter-spacing: 0.5px;
-      }
-
-      .subtitle {
-        margin: 10px 0 0;
-        color: var(--muted);
-        line-height: 1.7;
-      }
-
-      .grid {
-        margin-top: 20px;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
-      }
-
       .card {
         background: var(--panel);
         border: 1px solid var(--border);
         border-radius: 14px;
-        padding: 18px;
+        padding: 16px;
       }
-
-      .card h3 {
-        margin: 0 0 10px;
-        font-size: 17px;
-      }
-
-      .card p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.7;
-      }
-
-      .section {
-        margin-top: 20px;
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 18px;
-      }
-
-      .section h2 {
-        margin: 0 0 14px;
-        font-size: 20px;
-      }
-
-      .tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      .tag {
-        background: var(--panel-soft);
-        border: 1px solid var(--border);
-        color: var(--primary-soft);
-        padding: 8px 12px;
-        border-radius: 999px;
-        font-size: 13px;
-      }
-
-      .api-box {
-        margin-top: 14px;
-        background: #0d1429;
-        border: 1px dashed #334373;
-        border-radius: 12px;
-        padding: 12px;
-        font-family: Consolas, "Courier New", monospace;
-        color: #b8c8ff;
-        font-size: 13px;
-        line-height: 1.8;
-      }
-
-      .actions {
-        margin-top: 16px;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .form-grid {
-        margin-top: 16px;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-      }
-
-      .field {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      .field label {
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .field input,
-      .field textarea {
+      h1 { margin: 0; font-size: 24px; }
+      p { color: var(--muted); line-height: 1.7; }
+      label { display: block; margin: 12px 0 6px; color: var(--muted); font-size: 14px; }
+      input, textarea {
         width: 100%;
         border: 1px solid var(--border);
         border-radius: 10px;
         background: #0d1429;
         color: var(--text);
         padding: 10px 12px;
-        outline: none;
       }
-
-      .field textarea {
-        min-height: 88px;
-        resize: vertical;
-      }
-
-      .field.full {
-        grid-column: 1 / -1;
-      }
-
-      .btn {
+      textarea { min-height: 70px; resize: vertical; }
+      .btns { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+      button {
         border: 1px solid transparent;
         border-radius: 10px;
         padding: 10px 14px;
-        cursor: pointer;
         font-weight: 600;
+        cursor: pointer;
       }
-
-      .btn-primary {
-        background: var(--primary);
-        color: white;
-      }
-
-      .btn-primary:hover {
-        background: #6f9cff;
-      }
-
-      .btn-outline {
-        background: transparent;
-        color: var(--text);
-        border-color: var(--border);
-      }
-
-      .status {
-        margin-top: 14px;
-        color: var(--muted);
-        font-size: 14px;
-      }
-
-      .dot {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        margin-right: 8px;
-      }
-
-      .ok {
-        background: var(--success);
-      }
-
-      .warn {
-        background: var(--danger);
-      }
-
-      .result-box {
-        margin-top: 16px;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 12px;
-        background: #0d1429;
-      }
-
-      .result-title {
-        margin: 0 0 10px;
-        font-size: 15px;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-      }
-
-      th,
-      td {
-        border-bottom: 1px solid #223058;
-        padding: 8px 6px;
-        text-align: left;
-      }
-
+      .primary { background: var(--primary); color: #fff; }
+      .ghost { background: transparent; border-color: var(--border); color: var(--text); }
+      .status { margin-top: 10px; color: var(--muted); font-size: 14px; }
+      .result { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
+      .risk-high { color: var(--danger); font-weight: 700; }
+      .risk-low { color: var(--success); font-weight: 700; }
       .preview {
-        margin-top: 12px;
-        max-width: 320px;
+        margin-top: 10px;
+        max-width: 100%;
         border: 1px solid var(--border);
         border-radius: 10px;
-      }
-
-      @media (max-width: 860px) {
-        .grid {
-          grid-template-columns: 1fr;
-        }
-
-        .form-grid {
-          grid-template-columns: 1fr;
-        }
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <div class="hero">
-        <h1 class="title">MedFuse-X 医学影像多模态系统</h1>
-        <p class="subtitle">
-          深色前端演示页：用于展示多模态融合、Grad-CAM 可解释性和轻量化部署能力。可作为大创路演页面或系统入口原型。
-        </p>
-      </div>
+    <div class="wrap">
+      <div class="card">
+        <h1>胸片简易分析</h1>
+        <p>上传一张胸片，系统会给出风险提示。此结果仅供参考，不能代替医生诊断。</p>
 
-      <div class="grid">
-        <div class="card">
-          <h3>多模态融合</h3>
-          <p>联合影像、报告文本和结构化特征，输出患者级风险评分，支持复杂病例辅助判断。</p>
-        </div>
-        <div class="card">
-          <h3>可解释性</h3>
-          <p>接入 Grad-CAM 热图，直观展示模型关注区域，提升医生与评委对系统可信度的理解。</p>
-        </div>
-        <div class="card">
-          <h3>工程落地</h3>
-          <p>支持 CSV 数据接入、FastAPI 推理接口与轻量部署路径，便于大创周期内快速交付。</p>
-        </div>
-      </div>
+        <label for="apiBaseUrl">接口地址（默认不用改）</label>
+        <input id="apiBaseUrl" type="text" value="http://127.0.0.1:8000" />
 
-      <div class="section">
-        <h2>接口概览与在线调用</h2>
-        <div class="tags">
-          <span class="tag">GET /health</span>
-          <span class="tag">POST /infer</span>
-          <span class="tag">POST /infer_with_image</span>
-        </div>
-        <div class="api-box">
-          启动命令（工程目录）<br />
-          powershell -ExecutionPolicy Bypass -File scripts/run_api.ps1
-        </div>
-        <div class="form-grid">
-          <div class="field full">
-            <label for="apiBaseUrl">接口基地址（支持本地/云端切换）</label>
-            <input id="apiBaseUrl" type="text" value="http://127.0.0.1:8000" />
-          </div>
-          <div class="field full">
-            <label for="apiHistory">最近使用地址（最多3个）</label>
-            <select id="apiHistory" onchange="selectApiHistory()">
-              <option value="">请选择历史地址</option>
-            </select>
-          </div>
-        </div>
-        <div class="actions">
-          <button class="btn btn-primary" onclick="pingHealth()">检测接口状态</button>
-          <button class="btn btn-outline" onclick="saveApiBaseUrl()">保存接口地址</button>
-          <button class="btn btn-outline" onclick="showHint()">查看调用提示</button>
-        </div>
-        <div class="status" id="statusText">
-          <span class="dot warn"></span>尚未检测服务状态
-        </div>
+        <label for="imageFile">胸片图片（必填）</label>
+        <input id="imageFile" type="file" accept="image/*" />
 
-        <div class="form-grid">
-          <div class="field full">
-            <label for="imageFile">胸片图像文件（必填）</label>
-            <input id="imageFile" type="file" accept="image/*" />
-          </div>
-          <div class="field full">
-            <label for="textInput">报告文本/主诉（可选）</label>
-            <textarea id="textInput" placeholder="例如：双肺纹理增多，右下肺可疑感染灶。"></textarea>
-          </div>
-          <div class="field full">
-            <label for="structInput">结构化特征（必填，6个数，逗号分隔）</label>
-            <input
-              id="structInput"
-              type="text"
-              value="0.52,1,0,0,1,0"
-              placeholder="示例：0.52,1,0,0,1,0"
-            />
-          </div>
-        </div>
+        <label for="textInput">症状描述（可选）</label>
+        <textarea id="textInput" placeholder="例如：咳嗽、发热3天"></textarea>
 
-        <div class="actions">
-          <button class="btn btn-primary" onclick="submitInfer()">上传并推理</button>
-          <button class="btn btn-outline" onclick="resetResult()">清空结果</button>
+        <div class="btns">
+          <button class="primary" onclick="submitInfer()">开始分析</button>
+          <button class="ghost" onclick="pingHealth()">检测服务</button>
+          <button class="ghost" onclick="resetForm()">清空</button>
         </div>
+        <div class="status" id="statusText">请先上传图片后点击“开始分析”。</div>
 
-        <div class="result-box" id="resultBox" style="display: none">
-          <h3 class="result-title">推理结果</h3>
-          <div id="resultText" class="status"></div>
-          <table id="resultTable">
-            <thead>
-              <tr>
-                <th>类别</th>
-                <th>风险分数</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-          <img id="heatmapPreview" class="preview" alt="Grad-CAM热图预览" style="display: none" />
+        <div class="result" id="resultBox" style="display:none;">
+          <div id="riskLevel"></div>
+          <div id="topClass" class="status"></div>
+          <div id="topScore" class="status"></div>
+          <img id="heatmapPreview" class="preview" alt="热图预览" style="display:none;" />
         </div>
       </div>
     </div>
 
     <script>
-      const HISTORY_KEY = "medfuse_api_base_url_history";
-
       function getApiBaseUrl() {
-        const input = document.getElementById("apiBaseUrl");
-        const base = (input.value || "").trim().replace(/\/+$/, "");
-        return base || "http://127.0.0.1:8000";
-      }
-
-      function getApiHistory() {
-        const raw = localStorage.getItem(HISTORY_KEY);
-        if (!raw) return [];
-        try {
-          const arr = JSON.parse(raw);
-          if (!Array.isArray(arr)) return [];
-          return arr.filter((x) => typeof x === "string" && x.trim().length > 0);
-        } catch {
-          return [];
-        }
-      }
-
-      function saveApiHistory(list) {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 3)));
-      }
-
-      function pushApiHistory(base) {
-        const current = getApiHistory().filter((x) => x !== base);
-        current.unshift(base);
-        const latest = current.slice(0, 3);
-        saveApiHistory(latest);
-        renderApiHistory();
-      }
-
-      function renderApiHistory() {
-        const select = document.getElementById("apiHistory");
-        const history = getApiHistory();
-        select.innerHTML = '<option value="">请选择历史地址</option>';
-        history.forEach((addr) => {
-          const opt = document.createElement("option");
-          opt.value = addr;
-          opt.textContent = addr;
-          select.appendChild(opt);
-        });
-      }
-
-      function selectApiHistory() {
-        const select = document.getElementById("apiHistory");
-        if (select.value) {
-          document.getElementById("apiBaseUrl").value = select.value;
-        }
-      }
-
-      function saveApiBaseUrl() {
-        const base = getApiBaseUrl();
-        localStorage.setItem("medfuse_api_base_url", base);
-        pushApiHistory(base);
-        const statusEl = document.getElementById("statusText");
-        statusEl.innerHTML =
-          '<span class="dot ok"></span>接口地址已保存：' + base;
-      }
-
-      function initApiBaseUrl() {
-        const saved = localStorage.getItem("medfuse_api_base_url");
-        if (saved) {
-          document.getElementById("apiBaseUrl").value = saved;
-        }
-        renderApiHistory();
+        return (document.getElementById("apiBaseUrl").value || "").trim().replace(/\/+$/, "") || "http://127.0.0.1:8000";
       }
 
       async function pingHealth() {
-        const statusEl = document.getElementById("statusText");
         const base = getApiBaseUrl();
+        const statusEl = document.getElementById("statusText");
         try {
           const resp = await fetch(base + "/health");
-          if (!resp.ok) throw new Error("接口返回非200");
-          const data = await resp.json();
-          pushApiHistory(base);
-          statusEl.innerHTML =
-            '<span class="dot ok"></span>服务正常：' + (data.服务 || "MedFuse-X") + "（" + base + "）";
-        } catch (e) {
-          statusEl.innerHTML =
-            '<span class="dot warn"></span>服务不可用，请检查接口地址或服务状态：' + base;
+          if (!resp.ok) throw new Error("服务异常");
+          statusEl.textContent = "服务正常，可开始分析。";
+        } catch (_e) {
+          statusEl.textContent = "服务不可用，请确认接口地址或后端是否启动。";
         }
-      }
-
-      function showHint() {
-        alert(
-          "建议流程：\\n1) 启动 FastAPI 服务\\n2) 使用 /infer_with_image 上传胸片\\n3) 查看风险分数与 Grad-CAM 热图路径"
-        );
       }
 
       async function submitInfer() {
         const fileInput = document.getElementById("imageFile");
         const textInput = document.getElementById("textInput");
-        const structInput = document.getElementById("structInput");
+        const statusEl = document.getElementById("statusText");
         const resultBox = document.getElementById("resultBox");
-        const resultText = document.getElementById("resultText");
-        const tbody = document.querySelector("#resultTable tbody");
+        const riskLevel = document.getElementById("riskLevel");
+        const topClass = document.getElementById("topClass");
+        const topScore = document.getElementById("topScore");
         const preview = document.getElementById("heatmapPreview");
         const base = getApiBaseUrl();
 
         if (!fileInput.files || fileInput.files.length === 0) {
-          alert("请先选择胸片图像文件。");
-          return;
-        }
-
-        const structRaw = structInput.value.trim();
-        const structParts = structRaw.split(",").map((s) => s.trim()).filter(Boolean);
-        if (structParts.length !== 6) {
-          alert("结构化特征必须是6个数字（逗号分隔）。");
+          statusEl.textContent = "请先选择胸片图片。";
           return;
         }
 
         const fd = new FormData();
         fd.append("image_file", fileInput.files[0]);
         fd.append("text", textInput.value || "");
-        fd.append("struct_features", structRaw);
+        fd.append("struct_features", "0.52,1,0,0,1,0");
 
-        resultBox.style.display = "block";
-        resultText.textContent = "正在调用接口，请稍候...";
-        tbody.innerHTML = "";
+        statusEl.textContent = "正在分析，请稍候...";
+        resultBox.style.display = "none";
         preview.style.display = "none";
 
         try {
-          const resp = await fetch(base + "/infer_with_image", {
-            method: "POST",
-            body: fd,
-          });
+          const resp = await fetch(base + "/infer_with_image", { method: "POST", body: fd });
           const data = await resp.json();
-          pushApiHistory(base);
-          if (!resp.ok || data.错误) {
-            throw new Error(data.错误 || "接口调用失败");
-          }
+          if (!resp.ok || data.错误) throw new Error(data.错误 || "分析失败");
 
           const scores = data.风险分数 || {};
-          const rows = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-          rows.forEach(([name, value]) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${name}</td><td>${Number(value).toFixed(4)}</td>`;
-            tbody.appendChild(tr);
-          });
+          const entries = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+          const best = entries[0] || ["未知", 0];
+          const level = Number(best[1]) >= 0.5 ? "较高风险" : "较低风险";
 
-          resultText.textContent = data.说明 || "推理完成。";
+          riskLevel.className = Number(best[1]) >= 0.5 ? "risk-high" : "risk-low";
+          riskLevel.textContent = "风险提示：" + level;
+          topClass.textContent = "主要类别：" + best[0];
+          topScore.textContent = "风险分数：" + Number(best[1]).toFixed(4);
 
           if (data.热图路径) {
-            const normalizedPath = data.热图路径.replaceAll("\\\\", "/");
-            preview.src = normalizedPath + `?t=${Date.now()}`;
+            preview.src = data.热图路径.replaceAll("\\\\", "/") + `?t=${Date.now()}`;
             preview.style.display = "block";
           }
+
+          resultBox.style.display = "block";
+          statusEl.textContent = "分析完成。请结合医生意见判断。";
         } catch (e) {
-          resultText.textContent = "调用失败：" + e.message;
+          statusEl.textContent = "调用失败：" + e.message;
         }
       }
 
-      function resetResult() {
+      function resetForm() {
         document.getElementById("imageFile").value = "";
         document.getElementById("textInput").value = "";
-        document.getElementById("structInput").value = "0.52,1,0,0,1,0";
+        document.getElementById("statusText").textContent = "请先上传图片后点击“开始分析”。";
         document.getElementById("resultBox").style.display = "none";
       }
-
-      initApiBaseUrl();
     </script>
   </body>
 </html>
