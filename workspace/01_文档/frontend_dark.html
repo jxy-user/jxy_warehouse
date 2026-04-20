@@ -6,16 +6,16 @@
     <title>灵枢AI医学影像问答</title>
     <style>
       :root {
-        --bg: #f5f7fb;
-        --sidebar: #eef2f9;
-        --panel: #ffffff;
-        --panel-soft: #f7f9ff;
-        --text: #1d2333;
-        --muted: #6a748f;
-        --primary: #4e6ef2;
-        --border: #dbe3f1;
-        --warn: #d35454;
-        --ok: #1f9a6e;
+        --bg: #111317;
+        --sidebar: #161a21;
+        --panel: #1c212a;
+        --panel-soft: #252b36;
+        --text: #e9edf5;
+        --muted: #9aa4b7;
+        --primary: #5f7cff;
+        --border: #343c4a;
+        --warn: #ff7a7a;
+        --ok: #5dd39e;
       }
       * { box-sizing: border-box; }
       body {
@@ -68,7 +68,7 @@
         cursor: pointer;
       }
       .visit-item.active {
-        border-color: #b8c7ef;
+        border-color: #5b6a84;
       }
       .main {
         padding: 20px;
@@ -121,13 +121,13 @@
         padding: 10px 12px;
         line-height: 1.6;
       }
-      .msg.ai { background: var(--panel-soft); border: 1px solid #e4ebfb; }
-      .msg.user { margin-left: auto; background: #dfe7ff; }
+      .msg.ai { background: var(--panel-soft); border: 1px solid #3a4354; }
+      .msg.user { margin-left: auto; background: #2d3f70; }
       .composer { padding: 12px; }
       .composer-box {
         border: 1px solid var(--border);
         border-radius: 12px;
-        background: #fff;
+        background: #171b22;
         padding: 10px;
       }
       textarea, input {
@@ -135,7 +135,7 @@
         border: 1px solid var(--border);
         border-radius: 10px;
         padding: 10px;
-        background: #fff;
+        background: #1a1f27;
         color: var(--text);
       }
       .composer-box textarea {
@@ -148,7 +148,7 @@
       .composer-footer {
         margin-top: 8px;
         padding-top: 8px;
-        border-top: 1px solid #e9eef8;
+        border-top: 1px solid #2d3442;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -170,7 +170,7 @@
         cursor: pointer;
       }
       .primary { background: var(--primary); color: #fff; font-weight: 700; }
-      .ghost { background: #fff; border-color: var(--border); color: var(--text); }
+      .ghost { background: #1a1f27; border-color: var(--border); color: var(--text); }
       .status { margin-top: 8px; color: var(--muted); font-size: 13px; }
       .high { color: var(--warn); font-weight: 700; }
       .low { color: var(--ok); font-weight: 700; }
