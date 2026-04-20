@@ -224,8 +224,8 @@
 
     <script>
       const visits = [
-        { id: "v1", title: "咳嗽发热咨询", preview: "夜间咳嗽三天" },
-        { id: "v2", title: "胸片辅助分析", preview: "上传了一张胸片" },
+        { id: "v1", title: "最近对话 1", preview: "今天 09:20" },
+        { id: "v2", title: "最近对话 2", preview: "昨天 21:14" },
       ];
       let activeVisitId = visits[0].id;
 
@@ -301,8 +301,8 @@
         document.getElementById("questionInput").value = "";
         visits.unshift({
           id: "v" + Date.now(),
-          title: question.slice(0, 8) + (question.length > 8 ? "..." : ""),
-          preview: "刚刚访问",
+          title: "新对话",
+          preview: "刚刚",
         });
         activeVisitId = visits[0].id;
         renderVisits();
