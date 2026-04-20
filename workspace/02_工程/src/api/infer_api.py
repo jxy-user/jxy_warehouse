@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from fastapi import Depends, FastAPI, File, Form, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 from pydantic import BaseModel
 
@@ -24,6 +25,14 @@ app = FastAPI(title="MedFuse-X 中文推理接口", version="0.2.0")
 cfg = load_config("src/config/default.yaml")
 heatmap_dir = Path(cfg["infer"]["heatmap_dir"])
 heatmap_dir.mkdir(parents=True, exist_ok=True)
+cors_cfg = cfg.get("cors", {})
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_cfg.get("allow_origins", ["*"]),
+    allow_credentials=cors_cfg.get("allow_credentials", True),
+    allow_methods=cors_cfg.get("allow_methods", ["*"]),
+    allow_headers=cors_cfg.get("allow_headers", ["*"]),
+)
 
 model_cfg = dict(cfg["model"])
 model_cfg["num_struct_features"] = cfg["data"]["num_struct_features"]

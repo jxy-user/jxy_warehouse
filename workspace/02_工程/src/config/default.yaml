@@ -42,3 +42,14 @@ security:
   enabled: true
   rate_limit_per_minute: 60
   public_health: true
+
+cors:
+  allow_origins:
+    - "http://127.0.0.1:8000"
+    - "http://localhost:8000"
+    - "https://jxy-user.github.io"
+  allow_credentials: true
+  allow_methods:
+    - "*"
+  allow_headers:
+    - "*"

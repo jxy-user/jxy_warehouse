@@ -225,3 +225,17 @@
 - 影响范围：`workspace/01_文档/README.md`、`workspace/01_文档/docs/problem_fix_summary.md`。
 - 回归验证：文档已覆盖“实现-验证-结论”完整闭环，可直接用于答辩与结题材料。
 - 预防动作：后续安全能力上线时，同步更新“实现文档+验收记录”两处，避免只改代码不留证据。
+
+### [2026-04-16] GitHub Pages调用接口失败（Failed to fetch）
+
+- 问题现象：页面在`https://jxy-user.github.io/...`可打开，但点击分析后提示`Failed to fetch`。
+- 根因分析：前端运行在HTTPS域名，接口地址固定为`http://127.0.0.1:8000`，触发浏览器跨域/混合内容限制。
+- 修复方案：
+  - 后端在`infer_api.py`接入`CORSMiddleware`，并从`default.yaml`读取跨域白名单配置
+  - 配置新增`cors`段，统一维护允许来源、方法、请求头
+  - 前端`getApiBaseUrl()`改为“URL参数`api`优先 -> localStorage -> 默认本机地址”
+  - README补充跨域与地址策略说明，明确GitHub Pages需对接HTTPS后端
+  - 同步检查并更新云函数权限文档与数据库文档变更记录
+- 影响范围：`workspace/02_工程/src/api/infer_api.py`、`workspace/02_工程/src/config/default.yaml`、`workspace/01_文档/frontend_dark.html`、`workspace/01_文档/README.md`、云开发文档。
+- 回归验证：本地联调可继续使用默认地址；线上页面可通过`?api=`切换到可访问的后端地址。
+- 预防动作：后续新增前端接口调用必须遵循“地址可配置+后端白名单可配置”双配置原则。

@@ -71,6 +71,14 @@ CSV列规范：
 - 推理接口默认限流：每个`API Key + IP`每分钟60次（可在`default.yaml`调节）
 - 超限返回：`429`；缺失Key返回：`401`；无效Key返回：`403`
 
+### 跨域与前端地址策略
+
+- 后端已启用CORS白名单，默认允许：`http://127.0.0.1:8000`、`http://localhost:8000`、`https://jxy-user.github.io`
+- 前端默认请求：`http://127.0.0.1:8000`
+- 前端支持通过URL参数覆盖接口地址：`frontend_dark.html?api=https://你的后端域名`
+- 参数中的`api`会自动写入`localStorage`（键名：`medfuse_api_base_url`），后续刷新可持续生效
+- 注意：GitHub Pages（HTTPS）不能直接调用本地HTTP接口，需改为可公网访问的HTTPS后端地址
+
 ### 安全验收清单（实测）
 
 1. 缺失API Key请求`/infer` -> 返回`401`  
