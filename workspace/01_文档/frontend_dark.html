@@ -71,21 +71,26 @@
         border-color: #5b6a84;
       }
       .main {
-        padding: 20px;
-        display: grid;
-        grid-template-rows: 1fr auto;
-        gap: 14px;
+        padding: 16px 18px;
+        display: block;
         min-height: 100vh;
-      }
-      .content, .composer {
         background: var(--panel);
         border: 1px solid var(--border);
         border-radius: 16px;
+        margin: 12px;
+        position: relative;
+        overflow: hidden;
+      }
+      .content, .composer {
+        background: transparent;
+        border: 0;
+        border-radius: 0;
       }
       .content {
-        padding: 16px;
+        padding: 8px 8px 160px;
         display: grid;
         grid-template-rows: 1fr;
+        min-height: calc(100vh - 70px);
       }
       .hello {
         display: flex;
@@ -123,7 +128,26 @@
       }
       .msg.ai { background: var(--panel-soft); border: 1px solid #3a4354; }
       .msg.user { margin-left: auto; background: #2d3f70; }
-      .composer { padding: 12px; }
+      .composer {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        bottom: 14px;
+        padding: 10px;
+        background: rgba(28, 33, 42, 0.86);
+        backdrop-filter: blur(8px);
+        border: 1px solid #394254;
+        border-radius: 14px;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.32);
+      }
+      .composer::before {
+        content: "";
+        position: absolute;
+        top: -10px;
+        left: 10px;
+        right: 10px;
+        border-top: 1px solid rgba(154, 164, 183, 0.35);
+      }
       .composer-box {
         border: 1px solid var(--border);
         border-radius: 12px;
@@ -179,6 +203,15 @@
         .layout { grid-template-columns: 1fr; }
         .sidebar { border-right: 0; border-bottom: 1px solid var(--border); }
         .chat { height: 50vh; }
+        .main {
+          margin: 0;
+          border-radius: 0;
+        }
+        .composer {
+          left: 10px;
+          right: 10px;
+          bottom: 10px;
+        }
       }
     </style>
   </head>
