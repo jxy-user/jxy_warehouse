@@ -113,19 +113,6 @@
         color: var(--muted);
         line-height: 1.7;
       }
-      .hello-tags {
-        margin-top: 16px;
-        display: inline-flex;
-        gap: 8px;
-      }
-      .hello-tag {
-        border: 1px solid #363636;
-        border-radius: 18px;
-        padding: 8px 14px;
-        font-size: 14px;
-        color: #c8c8c8;
-        background: #151515;
-      }
       .chat {
         display: none;
         height: calc(100vh - 250px);
@@ -242,18 +229,6 @@
         font-size: 18px;
         line-height: 1;
       }
-      .quick-tools {
-        display: inline-flex;
-        gap: 8px;
-      }
-      .quick-tool {
-        border: 1px solid #3d3d3d;
-        border-radius: 16px;
-        padding: 6px 12px;
-        font-size: 12px;
-        color: #d3d3d3;
-        background: #171717;
-      }
       .status { margin-top: 8px; color: var(--muted); font-size: 13px; }
       .high { color: var(--warn); font-weight: 700; }
       .low { color: var(--ok); font-weight: 700; }
@@ -319,10 +294,6 @@
             <div class="hello-card">
               <h1>你好，我是灵枢AI</h1>
               <p>可以向我描述症状，或上传骨骼 X 线/DR 做辅助分析。<br />我会给出风险提示、主要类别以及可解释热图。</p>
-              <div class="hello-tags">
-                <span class="hello-tag">快速模式</span>
-                <span class="hello-tag">专家模式</span>
-              </div>
             </div>
           </div>
           <div class="chat" id="chatBox">
@@ -334,10 +305,6 @@
           <div class="composer-box">
             <textarea id="questionInput" placeholder="给灵枢AI发送消息"></textarea>
             <div class="composer-footer">
-              <div class="quick-tools">
-                <span class="quick-tool">深度思考</span>
-                <span class="quick-tool">智能搜索</span>
-              </div>
               <div class="file-inline">
                 <input id="imageFile" type="file" accept="image/*" />
               </div>
