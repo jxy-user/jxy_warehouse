@@ -1,23 +1,33 @@
 # jxy_warehouse
 
+## 灵枢AI 与任务模块
+
+- 在 `../02_工程/src/config/default.yaml` 中设置 **`active_module`**，即可在**不改训练/推理代码**的情况下切换任务（胸片示例、骨骼、或你自建的模块）。
+- 模块文件目录：`../02_工程/src/config/modules/`，说明见同目录 `README.md`。
+- 当前默认 **`active_module: bone`**（骨骼 X 线/DR 多标签，见 `docs/09_骨骼影像任务与标签说明.md`）。
+- 恢复**原版胸片联调五类**时，将 `active_module` 改为 **`chest_mvp`**（CSV：`data/samples/train_chest_mvp.csv`，权重：`checkpoints/mmca_net_chest_mvp.pt`，需先训练或自备权重）。
+- `docs/01_病种范围与数据源.md` 等仍以胸片数据为方法参考时可继续查阅。
+
 ## AI医学影像大创方案文档（已整理版）
 
 本仓库已补充完整的大创方案与实施文档，入口如下：
 
-- 总方案：`docs/AI_medical_imaging_innovation_proposal.md`
-- 数据治理：`docs/02_data_governance_and_labeling_spec.md`
-- 模型评测：`docs/03_multimodal_baseline_and_offline_eval.md`
-- 小样本与部署：`docs/04_fewshot_and_lightweight_deployment.md`
-- 结题交付：`docs/05_final_deliverables_package.md`
+- 总方案：`docs/00_项目总方案.md`
+- 数据治理：`docs/02_数据治理与标注规范.md`
+- 模型评测：`docs/03_多模态基线与离线评测.md`
+- 小样本与部署：`docs/04_小样本与轻量化部署.md`
+- 结题交付：`docs/05_结题交付包.md`
 
 云开发必备文档：
 
-- 数据库文档：`docs/cloud_database_design.md`
-- 云函数权限文档：`docs/cloud_function_permissions.md`
+- 数据库文档：`docs/云数据库设计.md`
+- 云函数权限文档：`docs/云函数权限说明.md`
 
 问题修复沉淀：
 
-- 问题修改总结：`docs/problem_fix_summary.md`
+- 问题修改总结：`docs/问题修复总结.md`
+- 骨骼任务与标签：`docs/09_骨骼影像任务与标签说明.md`
+- 坐姿占位模块：`docs/10_坐姿检测模块占位说明.md`
 
 
 ## 第一版代码骨架（可直接运行）
@@ -25,7 +35,8 @@
 - 训练入口：`../02_工程/src/training/train.py`
 - 评测入口：`../02_工程/src/eval/evaluate.py`
 - 推理API：`../02_工程/src/api/infer_api.py`
-- 默认配置：`../02_工程/src/config/default.yaml`
+- 主配置：`../02_工程/src/config/default.yaml`
+- 任务模块：`../02_工程/src/config/modules/*.yaml`
 
 ### 快速开始
 
@@ -40,10 +51,7 @@
 
 ## 真实数据接入（CSV模式）
 
-默认是 `mock` 模式。切换真实数据时，在 `../02_工程/src/config/default.yaml` 将 `data.mode` 改为 `csv`，并配置：
-
-- `data.csv_path`：CSV标注路径（示例：`../03_数据/data/samples/train.csv`）
-- `data.image_root`：影像根目录（示例：`../03_数据/data/images`）
+默认是 `mock` 模式。切换真实数据时，在 `default.yaml` 将 `data.mode` 改为 `csv`。**各任务 CSV 路径在对应模块 YAML 里**（如 `bone` → `train_bone.csv`，`chest_mvp` → `train_chest_mvp.csv`）；影像根目录由主配置的 `data.image_root` 指定（示例：`../03_数据/data/images`）。
 
 ## 仓库目录规范
 
@@ -56,13 +64,15 @@ CSV列规范：
 
 - 基础列：`image_path`,`text`
 - 结构化特征：`struct_0` 到 `struct_5`
-- 多标签：`label_0` 到 `label_4`
+- 多标签：`label_0` 到 `label_4`（语义随 `active_module` 变化：**骨骼模块**见 `docs/09_骨骼影像任务与标签说明.md`，**胸片模块**见 `modules/chest_mvp.yaml` 内 `infer.class_names`）
 
 ## 中文推理接口
 
-- 健康检查：`GET /health`
+- 健康检查：`GET /health`（返回 `pipeline`、`任务模块`、`类别` 等）
 - 文本+结构化推理：`POST /infer`
-- 图片上传推理：`POST /infer_with_image`（返回风险分数与Grad-CAM热图路径）
+- 图片上传推理：`POST /infer_with_image`（上传说明随模块变化；`pipeline=mmc_net` 时含 Grad-CAM）
+- 自动路由推理：`POST /route_infer`（根据问题文本和是否上传影像自动分流到骨骼影像或坐姿占位模块，并返回路由原因与置信度）
+- **坐姿占位（与当前 `active_module` 无关，始终挂载）**：`GET /posture/info`、`POST /posture/analyze`（详见 `docs/10_坐姿检测模块占位说明.md`）
 
 ### 接口安全（鉴权+限流）
 

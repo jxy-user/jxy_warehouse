@@ -1,0 +1,35 @@
+# 青少年坐姿检测 — 占位模块（关键点/规则引擎未接入）
+# 专用路由：GET/POST /posture/* 始终挂载；也可将 active_module 设为本模块以整体占位运行见文档。
+
+pipeline: posture_stub
+
+metadata:
+  display_name: 坐姿检测（占位）
+
+data:
+  task: posture_stub
+  num_classes: 5
+  csv_path: ../03_数据/data/samples/train_posture_stub.csv
+
+model:
+  num_classes: 5
+
+train:
+  save_path: checkpoints/_noop_posture_stub.pt
+
+infer:
+  checkpoint_path: checkpoints/_noop_posture_stub.pt
+  class_names:
+    - 低头过度
+    - 弯腰驼背
+    - 躯干歪斜
+    - 久坐超时提示
+    - 视距过近提示
+
+stub:
+  status: placeholder
+  note: 算法接入后将替换为零样本骨架关键点检测与规则评分
+
+api:
+  upload_image_description: 坐姿场景单帧图像（占位，可为摄像头截图 PNG/JPG）
+  infer_description_suffix: 坐姿行为风险提示（占位）

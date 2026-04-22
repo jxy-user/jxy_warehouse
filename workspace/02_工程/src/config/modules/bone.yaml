@@ -1,0 +1,31 @@
+# 骨骼 X 线/DR 多标签（灵枢AI 申报主线）
+# 详见 workspace/01_文档/docs/09_骨骼影像任务与标签说明.md
+
+pipeline: mmc_net
+
+metadata:
+  display_name: 骨骼影像多标签
+
+data:
+  task: bone
+  num_classes: 5
+  csv_path: ../03_数据/data/samples/train_bone.csv
+
+model:
+  num_classes: 5
+
+train:
+  save_path: checkpoints/mmca_net_bone.pt
+
+infer:
+  checkpoint_path: checkpoints/mmca_net_bone.pt
+  class_names:
+    - 骨折高风险征象
+    - 骨龄与发育偏差
+    - 脊柱侧弯或排列异常
+    - 骺线及生长板相关
+    - 关节及干骺端异常
+
+api:
+  upload_image_description: 骨骼 X 线/DR 图像（PNG/JPG，灰度优先）
+  infer_description_suffix: 骨骼多标签辅助提示

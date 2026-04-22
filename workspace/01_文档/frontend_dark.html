@@ -229,7 +229,7 @@
           <div class="hello" id="helloBox">
             <div class="hello-card">
               <h1>你好，我是灵枢AI</h1>
-              <p>可以向我描述症状，或上传胸片做辅助分析。<br />我会给出风险提示、主要类别以及可解释热图。</p>
+              <p>可以向我描述症状，或上传骨骼 X 线/DR 做辅助分析。<br />我会给出风险提示、主要类别以及可解释热图。</p>
             </div>
           </div>
           <div class="chat" id="chatBox">
@@ -340,20 +340,14 @@
         activeVisitId = visits[0].id;
         renderVisits();
 
-        if (!file) {
-          addAi("已收到你的问题。若出现持续高热、呼吸困难、胸痛等症状，请及时线下就医。");
-          statusEl.textContent = "已回复。";
-          return;
-        }
-
         const fd = new FormData();
-        fd.append("image_file", file);
+        if (file) fd.append("image_file", file);
         fd.append("text", question);
         fd.append("struct_features", "0.52,1,0,0,1,0");
-        statusEl.textContent = "正在进行影像辅助分析...";
+        statusEl.textContent = "正在自动路由并分析...";
 
         try {
-          const resp = await fetch(getApiBaseUrl() + "/infer_with_image", {
+          const resp = await fetch(getApiBaseUrl() + "/route_infer", {
             method: "POST",
             headers: { "X-API-Key": getApiKey() },
             body: fd,
@@ -361,13 +355,25 @@
           const data = await resp.json();
           if (!resp.ok || data.错误) throw new Error(data.错误 || "分析失败");
 
-          const scores = data.风险分数 || {};
-          const top = Object.entries(scores).sort((a, b) => b[1] - a[1])[0] || ["未知", 0];
-          const score = Number(top[1]);
-          let html = `<div class="${score >= 0.5 ? "high" : "low"}">风险提示：${score >= 0.5 ? "较高风险" : "较低风险"}</div>`;
-          html += `<div>主要类别：${top[0]}</div><div>风险分数：${score.toFixed(4)}</div>`;
-          if (data.热图路径) {
-            html += `<img class="heatmap" src="${data.热图路径.replaceAll("\\\\", "/")}?t=${Date.now()}" alt="热图" />`;
+          let html = `<div>自动路由：${data.route_module || "未知"}（置信度：${data.route_confidence ?? "N/A"}）</div>`;
+          if (data.route_reason) html += `<div>路由原因：${data.route_reason}</div>`;
+
+          const result = data.result || {};
+          if (result.行为风险分数) {
+            const scores = result.行为风险分数 || {};
+            const top = Object.entries(scores).sort((a, b) => b[1] - a[1])[0] || ["未知", 0];
+            html += `<div>坐姿模块：${result.说明 || "占位模块返回"}</div>`;
+            html += `<div>主要行为维度：${top[0]}</div><div>风险分数：${Number(top[1]).toFixed(4)}</div>`;
+          } else {
+            const scores = result.风险分数 || {};
+            const top = Object.entries(scores).sort((a, b) => b[1] - a[1])[0] || ["未知", 0];
+            const score = Number(top[1]);
+            html += `<div class="${score >= 0.5 ? "high" : "low"}">风险提示：${score >= 0.5 ? "较高风险" : "较低风险"}</div>`;
+            html += `<div>主要类别：${top[0]}</div><div>风险分数：${score.toFixed(4)}</div>`;
+            if (result.热图路径) {
+              html += `<img class="heatmap" src="${result.热图路径.replaceAll("\\\\", "/")}?t=${Date.now()}" alt="热图" />`;
+            }
+            if (result.说明) html += `<div>${result.说明}</div>`;
           }
           addAi(html, true);
           statusEl.textContent = "分析完成。";

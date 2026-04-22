@@ -1,17 +1,24 @@
 import argparse
+import sys
+from typing import Optional
 
 import numpy as np
 import torch
 from sklearn.metrics import f1_score, roc_auc_score
 from torch.utils.data import DataLoader
 
-from src.config.utils import load_config
+from src.config.utils import load_resolved_config
 from src.data.dataset import CSVMultiModalDataset, MockMultiModalDataset
 from src.models.mmca_net import MMCANet
 
 
-def evaluate(cfg_path: str, checkpoint: str) -> None:
-    cfg = load_config(cfg_path)
+def evaluate(cfg_path: str, checkpoint: Optional[str]) -> None:
+    cfg = load_resolved_config(cfg_path)
+    if cfg.get("pipeline", "mmc_net") != "mmc_net":
+        print("当前为坐姿占位模块，不支持 MMCANet 评测。请改用 bone 或 chest_mvp。")
+        sys.exit(1)
+    if not checkpoint:
+        checkpoint = cfg["infer"]["checkpoint_path"]
     device = torch.device(cfg["device"])
 
     if cfg["data"]["mode"] == "csv":
@@ -69,6 +76,10 @@ def evaluate(cfg_path: str, checkpoint: str) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="src/config/default.yaml")
-    parser.add_argument("--checkpoint", default="checkpoints/mmca_net.pt")
+    parser.add_argument(
+        "--checkpoint",
+        default=None,
+        help="不填则使用当前模块 infer.checkpoint_path",
+    )
     args = parser.parse_args()
     evaluate(args.config, args.checkpoint)

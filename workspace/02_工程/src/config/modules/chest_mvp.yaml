@@ -1,0 +1,31 @@
+# 胸部影像多标签（原版联调任务）：正常 / 肺炎 / 肺结节 / 胸腔积液 / 气胸
+# 切换回本模块时请使用对应 CSV 与 checkpoint，详见 modules/README.md
+
+pipeline: mmc_net
+
+metadata:
+  display_name: 胸部影像多标签（示例）
+
+data:
+  task: chest_mvp
+  num_classes: 5
+  csv_path: ../03_数据/data/samples/train_chest_mvp.csv
+
+model:
+  num_classes: 5
+
+train:
+  save_path: checkpoints/mmca_net_chest_mvp.pt
+
+infer:
+  checkpoint_path: checkpoints/mmca_net_chest_mvp.pt
+  class_names:
+    - 正常
+    - 肺炎
+    - 肺结节
+    - 胸腔积液
+    - 气胸
+
+api:
+  upload_image_description: 胸部 X 线影像（PNG/JPG）
+  infer_description_suffix: 胸部多标签辅助提示

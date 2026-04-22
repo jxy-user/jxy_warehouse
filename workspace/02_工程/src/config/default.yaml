@@ -1,14 +1,17 @@
+# 灵枢AI — 全局配置（任务差异见 active_module 对应 modules/*.yaml）
+# 切换任务：只改 active_module，并为新任务准备独立 CSV 与 checkpoint（见 modules/README.md）
+
+active_module: bone   # bone | chest_mvp | 自定义模块文件名（不含 .yaml）
+
 seed: 42
 device: cpu
 
 data:
-  mode: mock   # 可选: mock / csv
+  mode: mock   # mock | csv；各类别数、csv_path 由模块覆盖
   num_samples: 120
   image_size: 224
   num_struct_features: 6
-  num_classes: 5
   train_split: 0.8
-  csv_path: ../03_数据/data/samples/train.csv
   image_root: ../03_数据/data/images
 
 model:
@@ -19,23 +22,14 @@ model:
   text_max_len: 32
   struct_hidden_dim: 64
   fusion_dim: 128
-  num_classes: 5
 
 train:
   batch_size: 8
   epochs: 2
   lr: 0.0005
   weight_decay: 0.0001
-  save_path: checkpoints/mmca_net.pt
 
 infer:
-  checkpoint_path: checkpoints/mmca_net.pt
-  class_names:
-    - 正常
-    - 肺炎
-    - 肺结节
-    - 胸腔积液
-    - 气胸
   heatmap_dir: ../03_数据/outputs/heatmaps
 
 security:

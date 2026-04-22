@@ -1,17 +1,21 @@
 import argparse
+import sys
 from pathlib import Path
 
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Subset
 
-from src.config.utils import load_config
+from src.config.utils import load_resolved_config
 from src.data.dataset import CSVMultiModalDataset, MockMultiModalDataset, split_indices
 from src.models.mmca_net import MMCANet
 
 
 def train(cfg_path: str) -> None:
-    cfg = load_config(cfg_path)
+    cfg = load_resolved_config(cfg_path)
+    if cfg.get("pipeline", "mmc_net") != "mmc_net":
+        print("当前 active_module 为坐姿占位（pipeline=posture_stub），不支持 MMCANet 训练。请改用 bone 或 chest_mvp。")
+        sys.exit(1)
     device = torch.device(cfg["device"])
 
     if cfg["data"]["mode"] == "csv":
@@ -24,7 +28,7 @@ def train(cfg_path: str) -> None:
             num_classes=cfg["data"]["num_classes"],
             text_vocab_size=cfg["model"]["text_vocab_size"],
         )
-        print("使用真实CSV数据集训练。")
+        print(f"使用真实CSV数据集训练。（模块={cfg.get('active_module')}）")
     else:
         dataset = MockMultiModalDataset(
             num_samples=cfg["data"]["num_samples"],

@@ -1,6 +1,6 @@
 import io
 from pathlib import Path
-from typing import List
+from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 from pydantic import BaseModel
 
-from src.config.utils import load_config
+from src.config.utils import load_module_overlay, load_resolved_config
 from src.api.security import require_auth_and_rate_limit
 from src.data.dataset import tokenize_text_to_ids
 from src.models.mmca_net import MMCANet
@@ -21,8 +21,25 @@ class InferenceRequest(BaseModel):
     struct_features: List[float]
 
 
-app = FastAPI(title="MedFuse-X 中文推理接口", version="0.2.0")
-cfg = load_config("src/config/default.yaml")
+def _build_app_title(main_cfg: dict) -> str:
+    mod = main_cfg.get("metadata", {}).get("display_name")
+    if mod:
+        return f"灵枢AI — {mod}"
+    return "灵枢AI 多模态医学影像推理服务"
+
+
+BASE_CFG_PATH = "src/config/default.yaml"
+cfg = load_resolved_config(BASE_CFG_PATH)
+# 坐姿占位：与 active_module 无关，始终可读固定模块配置
+posture_cfg = load_module_overlay(BASE_CFG_PATH, "posture_stub")
+
+PIPELINE = cfg.get("pipeline", "mmc_net")
+
+app = FastAPI(
+    title=_build_app_title(cfg),
+    version="0.5.0",
+    description="active_module 切换影像任务；/posture/* 为坐姿占位接口（见 modules/posture_stub.yaml）",
+)
 heatmap_dir = Path(cfg["infer"]["heatmap_dir"])
 heatmap_dir.mkdir(parents=True, exist_ok=True)
 cors_cfg = cfg.get("cors", {})
@@ -34,18 +51,31 @@ app.add_middleware(
     allow_headers=cors_cfg.get("allow_headers", ["*"]),
 )
 
-model_cfg = dict(cfg["model"])
-model_cfg["num_struct_features"] = cfg["data"]["num_struct_features"]
-model_cfg["num_classes"] = cfg["data"]["num_classes"]
-model = MMCANet(model_cfg)
-ckpt = Path(cfg["infer"]["checkpoint_path"])
-if ckpt.exists():
-    model.load_state_dict(torch.load(ckpt, map_location="cpu"))
-model.eval()
+model: Optional[MMCANet] = None
+if PIPELINE == "mmc_net":
+    model_cfg = dict(cfg["model"])
+    model_cfg["num_struct_features"] = cfg["data"]["num_struct_features"]
+    model_cfg["num_classes"] = cfg["data"]["num_classes"]
+    model = MMCANet(model_cfg)
+    ckpt = Path(cfg["infer"]["checkpoint_path"])
+    if ckpt.exists():
+        model.load_state_dict(torch.load(ckpt, map_location="cpu"))
+    model.eval()
+
 labels = cfg["infer"]["class_names"]
+posture_labels = posture_cfg["infer"]["class_names"]
+
 security_enabled = cfg.get("security", {}).get("enabled", True)
 rate_limit_per_minute = cfg.get("security", {}).get("rate_limit_per_minute", 60)
 public_health = cfg.get("security", {}).get("public_health", True)
+
+UPLOAD_DESC = cfg.get("api", {}).get("upload_image_description", "医学影像文件（PNG/JPG）")
+BONE_KEYWORDS = {
+    "骨", "骨折", "骨裂", "骨龄", "关节", "骺线", "生长板", "脊柱", "侧弯", "x光", "dr", "片子", "外伤", "肿痛",
+}
+POSTURE_KEYWORDS = {
+    "坐姿", "低头", "驼背", "歪", "歪斜", "久坐", "肩颈", "颈椎", "写作业", "屏幕", "视距", "坐太久", "姿势",
+}
 
 
 def _auth_dep(request: Request) -> str:
@@ -56,6 +86,39 @@ def _auth_dep(request: Request) -> str:
     )
 
 
+def _stub_infer_response(kind: str) -> dict:
+    zero_scores = {name: 0.0 for name in labels}
+    return {
+        "风险分数": zero_scores,
+        "说明": "坐姿占位模块（pipeline=posture_stub）：关键点估计与规则引擎未接入，分数固定为占位。请改用 bone/chest_mvp 进行影像推理，或使用 /posture/analyze。",
+        "pipeline": PIPELINE,
+        "占位类型": kind,
+    }
+
+
+def _route_query(text: str, has_image: bool) -> Tuple[str, str, float]:
+    content = (text or "").lower()
+    bone_hits = [k for k in BONE_KEYWORDS if k in content]
+    posture_hits = [k for k in POSTURE_KEYWORDS if k in content]
+    bone_score = len(bone_hits)
+    posture_score = len(posture_hits)
+
+    # 若上传影像，优先走影像模块
+    if has_image:
+        bone_score += 2
+
+    if posture_score > bone_score:
+        total = posture_score + bone_score + 1e-6
+        conf = min(0.95, max(0.55, posture_score / total + 0.3))
+        reason = "命中坐姿关键词: " + (",".join(posture_hits[:3]) if posture_hits else "无")
+        return "posture_stub", reason, round(conf, 2)
+
+    total = posture_score + bone_score + 1e-6
+    conf = min(0.95, max(0.55, bone_score / total + 0.3))
+    reason = "命中骨骼关键词: " + (",".join(bone_hits[:3]) if bone_hits else "默认骨骼路由")
+    return "bone", reason, round(conf, 2)
+
+
 def _prepare_image_tensor(content: bytes, image_size: int) -> torch.Tensor:
     image = Image.open(io.BytesIO(content)).convert("L")
     image = image.resize((image_size, image_size))
@@ -63,13 +126,41 @@ def _prepare_image_tensor(content: bytes, image_size: int) -> torch.Tensor:
     return arr.unsqueeze(0).unsqueeze(0)
 
 
-def _save_heatmap_placeholder(image_tensor: torch.Tensor, file_stem: str) -> str:
-    # 轻量占位热图: 直接复用灰度图，后续可替换为Grad-CAM。
-    arr = (image_tensor.squeeze().clamp(0, 1).numpy() * 255).astype("uint8")
-    heatmap = Image.fromarray(arr, mode="L")
-    out_path = heatmap_dir / f"{file_stem}_heatmap.png"
-    heatmap.save(out_path)
-    return str(out_path).replace("\\", "/")
+def _run_mmc_json_infer(text: str, struct_values: List[float]) -> dict:
+    assert model is not None
+    text_ids = tokenize_text_to_ids(text, cfg["model"]["text_max_len"], cfg["model"]["text_vocab_size"])
+    text_ids = torch.tensor([text_ids], dtype=torch.long)
+    struct = torch.tensor([struct_values], dtype=torch.float32)
+    image = torch.zeros((1, 1, cfg["data"]["image_size"], cfg["data"]["image_size"]), dtype=torch.float32)
+    with torch.no_grad():
+        logits = model(image, text_ids, struct)
+        probs = torch.sigmoid(logits).squeeze(0).tolist()
+    return {"风险分数": dict(zip(labels, probs))}
+
+
+def _run_mmc_image_infer(content: bytes, filename: str, text: str, struct_values: List[float]) -> dict:
+    assert model is not None
+    struct = torch.tensor([struct_values], dtype=torch.float32)
+    text_ids = tokenize_text_to_ids(text, cfg["model"]["text_max_len"], cfg["model"]["text_vocab_size"])
+    text_ids = torch.tensor([text_ids], dtype=torch.long)
+
+    image = _prepare_image_tensor(content, cfg["data"]["image_size"])
+    logits = model(image, text_ids, struct)
+    probs = torch.sigmoid(logits).squeeze(0).detach().cpu().tolist()
+    target_idx = int(np.argmax(probs))
+    cam = _generate_gradcam(image, text_ids, struct, target_idx)
+    heatmap_path = _save_gradcam_heatmap(image, cam, Path(filename).stem or "sample")
+
+    suffix = cfg.get("api", {}).get("infer_description_suffix", "")
+    tip = f"已生成Grad-CAM热图，当前倾向类别: {labels[target_idx]}"
+    if suffix:
+        tip += f"（{suffix}）"
+    return {
+        "文件名": filename,
+        "风险分数": dict(zip(labels, probs)),
+        "热图路径": heatmap_path,
+        "说明": tip,
+    }
 
 
 def _generate_gradcam(
@@ -78,6 +169,7 @@ def _generate_gradcam(
     struct: torch.Tensor,
     target_idx: int,
 ) -> np.ndarray:
+    assert model is not None
     activations = []
     gradients = []
 
@@ -132,7 +224,17 @@ def health(request: Request) -> dict:
             enabled=security_enabled,
             rate_limit_per_minute=rate_limit_per_minute,
         )
-    return {"状态": "正常", "服务": "MedFuse-X"}
+    out = {
+        "状态": "正常",
+        "服务": "灵枢AI",
+        "pipeline": PIPELINE,
+        "任务模块": cfg.get("active_module"),
+        "任务标识": cfg["data"].get("task"),
+        "模块名称": cfg.get("metadata", {}).get("display_name"),
+        "类别": labels,
+        "坐姿占位路由": "/posture/info（无需切换 active_module）",
+    }
+    return out
 
 
 @app.post("/infer")
@@ -140,48 +242,114 @@ def infer(
     req: InferenceRequest,
     _api_key: str = Depends(_auth_dep),
 ) -> dict:
-    text_ids = tokenize_text_to_ids(req.text, cfg["model"]["text_max_len"], cfg["model"]["text_vocab_size"])
-    text_ids = torch.tensor([text_ids], dtype=torch.long)
+    if PIPELINE != "mmc_net":
+        return _stub_infer_response("infer_json")
 
-    struct = torch.tensor([req.struct_features], dtype=torch.float32)
-    if struct.shape[1] != cfg["data"]["num_struct_features"]:
+    if len(req.struct_features) != cfg["data"]["num_struct_features"]:
         return {"错误": f"struct_features长度必须为 {cfg['data']['num_struct_features']}"}
-
-    # JSON接口兜底使用空白图，适合联调。
-    image = torch.zeros((1, 1, cfg["data"]["image_size"], cfg["data"]["image_size"]), dtype=torch.float32)
-
-    with torch.no_grad():
-        logits = model(image, text_ids, struct)
-        probs = torch.sigmoid(logits).squeeze(0).tolist()
-    return {"风险分数": dict(zip(labels, probs))}
+    return _run_mmc_json_infer(req.text, req.struct_features)
 
 
 @app.post("/infer_with_image")
 async def infer_with_image(
-    image_file: UploadFile = File(..., description="胸片图像文件"),
+    image_file: UploadFile = File(..., description=UPLOAD_DESC),
     text: str = Form(default="", description="报告文本或主诉"),
     struct_features: str = Form(..., description="结构化特征，逗号分隔"),
     _api_key: str = Depends(_auth_dep),
 ) -> dict:
+    if PIPELINE != "mmc_net":
+        await image_file.read()
+        return _stub_infer_response("infer_image")
+
     parts = [x.strip() for x in struct_features.split(",") if x.strip()]
     if len(parts) != cfg["data"]["num_struct_features"]:
         return {"错误": f"struct_features长度必须为 {cfg['data']['num_struct_features']}"}
-
-    struct = torch.tensor([[float(x) for x in parts]], dtype=torch.float32)
-    text_ids = tokenize_text_to_ids(text, cfg["model"]["text_max_len"], cfg["model"]["text_vocab_size"])
-    text_ids = torch.tensor([text_ids], dtype=torch.long)
-
+    struct_values = [float(x) for x in parts]
     content = await image_file.read()
-    image = _prepare_image_tensor(content, cfg["data"]["image_size"])
-    logits = model(image, text_ids, struct)
-    probs = torch.sigmoid(logits).squeeze(0).detach().cpu().tolist()
-    target_idx = int(np.argmax(probs))
-    cam = _generate_gradcam(image, text_ids, struct, target_idx)
-    heatmap_path = _save_gradcam_heatmap(image, cam, Path(image_file.filename).stem or "sample")
+    return _run_mmc_image_infer(content, image_file.filename, text, struct_values)
 
+
+@app.get("/posture/info")
+def posture_info(request: Request, _api_key: str = Depends(_auth_dep)) -> dict:
+    """坐姿占位模块说明（配置来自 modules/posture_stub.yaml，与当前 active_module 独立）。"""
     return {
-        "文件名": image_file.filename,
-        "风险分数": dict(zip(labels, probs)),
-        "热图路径": heatmap_path,
-        "说明": f"已生成Grad-CAM热图，当前高风险类别为: {labels[target_idx]}",
+        "模块": "posture_stub",
+        "pipeline": posture_cfg.get("pipeline"),
+        "任务标识": posture_cfg["data"].get("task"),
+        "模块名称": posture_cfg.get("metadata", {}).get("display_name"),
+        "行为维度": posture_labels,
+        "stub": posture_cfg.get("stub", {}),
+        "说明": "POST /posture/analyze 上传单帧图像将返回占位分数（全0）；算法接入后替换为关键点+规则引擎。",
+    }
+
+
+@app.post("/posture/analyze")
+async def posture_analyze(
+    image_file: Optional[UploadFile] = File(None),
+    _api_key: str = Depends(_auth_dep),
+) -> dict:
+    """坐姿分析占位：接收可选单帧图像，返回固定占位结构。"""
+    if image_file is not None:
+        await image_file.read()
+    return {
+        "模块": "posture_stub",
+        "行为风险分数": {name: 0.0 for name in posture_labels},
+        "说明": "占位响应：未运行姿态估计。后续将接入关键点检测与久坐/低头等规则评分。",
+        "pipeline": posture_cfg.get("pipeline"),
+    }
+
+
+@app.post("/route_infer")
+async def route_infer(
+    text: str = Form(default="", description="用户问题文本"),
+    struct_features: str = Form(default="", description="结构化特征，逗号分隔，可空"),
+    image_file: Optional[UploadFile] = File(None, description="可选影像文件"),
+    _api_key: str = Depends(_auth_dep),
+) -> dict:
+    has_image = image_file is not None
+    route_module, reason, confidence = _route_query(text, has_image)
+
+    parts = [x.strip() for x in struct_features.split(",") if x.strip()]
+    if parts and len(parts) != cfg["data"]["num_struct_features"]:
+        return {"错误": f"struct_features长度必须为 {cfg['data']['num_struct_features']}"}
+    if parts:
+        struct_values = [float(x) for x in parts]
+    else:
+        struct_values = [0.0] * cfg["data"]["num_struct_features"]
+
+    if route_module == "posture_stub":
+        if image_file is not None:
+            await image_file.read()
+        result = {
+            "模块": "posture_stub",
+            "行为风险分数": {name: 0.0 for name in posture_labels},
+            "说明": "自动路由到坐姿占位模块：当前返回占位分数（全0）。",
+            "pipeline": posture_cfg.get("pipeline"),
+        }
+        return {
+            "route_module": route_module,
+            "route_reason": reason,
+            "route_confidence": confidence,
+            "result": result,
+        }
+
+    # 路由到骨骼/影像模块，要求当前 active_module 是 mmc_net 管线
+    if PIPELINE != "mmc_net" or model is None:
+        return {
+            "route_module": route_module,
+            "route_reason": reason,
+            "route_confidence": confidence,
+            "错误": "当前 active_module 不是影像推理模块（mmc_net），无法执行骨骼路由。请切换到 bone 或 chest_mvp。",
+        }
+
+    if image_file is None:
+        result = _run_mmc_json_infer(text, struct_values)
+    else:
+        content = await image_file.read()
+        result = _run_mmc_image_infer(content, image_file.filename, text, struct_values)
+    return {
+        "route_module": route_module,
+        "route_reason": reason,
+        "route_confidence": confidence,
+        "result": result,
     }
