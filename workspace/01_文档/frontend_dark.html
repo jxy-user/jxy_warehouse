@@ -87,7 +87,7 @@
         border-radius: 0;
       }
       .content {
-        padding: 8px 8px 160px;
+        padding: 8px 8px 220px;
         display: grid;
         grid-template-rows: 1fr;
         min-height: calc(100vh - 70px);
@@ -100,17 +100,31 @@
       }
       .hello-card {
         text-align: center;
-        max-width: 620px;
-        padding: 28px 24px;
+        max-width: 760px;
+        padding: 14px 24px 30px;
       }
       .hello-card h1 {
         margin: 0;
-        font-size: 32px;
+        font-size: 44px;
+        letter-spacing: 0.5px;
       }
       .hello-card p {
         margin-top: 10px;
         color: var(--muted);
         line-height: 1.7;
+      }
+      .hello-tags {
+        margin-top: 16px;
+        display: inline-flex;
+        gap: 8px;
+      }
+      .hello-tag {
+        border: 1px solid #3b465a;
+        border-radius: 18px;
+        padding: 8px 14px;
+        font-size: 14px;
+        color: #b8c2d8;
+        background: #1b2230;
       }
       .chat {
         display: none;
@@ -130,15 +144,16 @@
       .msg.user { margin-left: auto; background: #2d3f70; }
       .composer {
         position: absolute;
-        left: 16px;
-        right: 16px;
-        bottom: 14px;
-        padding: 10px;
-        background: rgba(28, 33, 42, 0.86);
-        backdrop-filter: blur(8px);
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(860px, calc(100% - 44px));
+        bottom: 18px;
+        padding: 8px;
+        background: rgba(28, 33, 42, 0.8);
+        backdrop-filter: blur(6px);
         border: 1px solid #394254;
-        border-radius: 14px;
-        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.32);
+        border-radius: 16px;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.34);
       }
       .composer::before {
         content: "";
@@ -150,9 +165,9 @@
       }
       .composer-box {
         border: 1px solid var(--border);
-        border-radius: 12px;
+        border-radius: 10px;
         background: #171b22;
-        padding: 10px;
+        padding: 8px;
       }
       textarea, input {
         width: 100%;
@@ -165,26 +180,21 @@
       .composer-box textarea {
         border: 0;
         background: transparent;
-        min-height: 62px;
+        min-height: 52px;
         padding: 0;
+        font-size: 17px;
       }
       .composer-box textarea:focus { outline: none; }
       .composer-footer {
-        margin-top: 8px;
-        padding-top: 8px;
+        margin-top: 6px;
+        padding-top: 6px;
         border-top: 1px solid #2d3442;
         display: flex;
         align-items: center;
         gap: 8px;
-        flex-wrap: wrap;
       }
       .file-inline {
-        flex: 0 0 200px;
-        min-width: 180px;
-      }
-      .file-inline input {
-        font-size: 12px;
-        padding: 7px;
+        display: none;
       }
       .actions { margin-left: auto; display: flex; gap: 8px; }
       button {
@@ -195,14 +205,48 @@
       }
       .primary { background: var(--primary); color: #fff; font-weight: 700; }
       .ghost { background: #1a1f27; border-color: var(--border); color: var(--text); }
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #1a1f27;
+        color: var(--text);
+        font-size: 18px;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .send-arrow {
+        width: 42px;
+        height: 34px;
+        padding: 0;
+        border-radius: 8px;
+        font-size: 18px;
+        line-height: 1;
+      }
+      .quick-tools {
+        display: inline-flex;
+        gap: 8px;
+      }
+      .quick-tool {
+        border: 1px solid #4a5a80;
+        border-radius: 16px;
+        padding: 6px 12px;
+        font-size: 12px;
+        color: #9fb7ff;
+        background: #1f2d4f;
+      }
       .status { margin-top: 8px; color: var(--muted); font-size: 13px; }
       .high { color: var(--warn); font-weight: 700; }
       .low { color: var(--ok); font-weight: 700; }
       .heatmap { margin-top: 8px; max-width: 320px; border-radius: 10px; border: 1px solid var(--border); }
       .route-float {
         position: fixed;
-        right: 18px;
-        bottom: 24px;
+        right: 24px;
+        bottom: 126px;
         z-index: 99;
         display: flex;
         flex-direction: column;
@@ -243,9 +287,12 @@
           border-radius: 0;
         }
         .composer {
-          left: 10px;
-          right: 10px;
+          width: calc(100% - 20px);
           bottom: 10px;
+        }
+        .route-float {
+          right: 10px;
+          bottom: 116px;
         }
       }
     </style>
@@ -265,6 +312,10 @@
             <div class="hello-card">
               <h1>你好，我是灵枢AI</h1>
               <p>可以向我描述症状，或上传骨骼 X 线/DR 做辅助分析。<br />我会给出风险提示、主要类别以及可解释热图。</p>
+              <div class="hello-tags">
+                <span class="hello-tag">快速模式</span>
+                <span class="hello-tag">专家模式</span>
+              </div>
             </div>
           </div>
           <div class="chat" id="chatBox">
@@ -276,12 +327,16 @@
           <div class="composer-box">
             <textarea id="questionInput" placeholder="给灵枢AI发送消息"></textarea>
             <div class="composer-footer">
+              <div class="quick-tools">
+                <span class="quick-tool">深度思考</span>
+                <span class="quick-tool">智能搜索</span>
+              </div>
               <div class="file-inline">
                 <input id="imageFile" type="file" accept="image/*" />
               </div>
               <div class="actions">
-                <button class="primary" onclick="sendQuestion()">发送问题</button>
-                <button class="ghost" onclick="startNewChat()">新对话</button>
+                <button class="icon-btn" onclick="openImagePicker()" title="选择文件">+</button>
+                <button class="primary send-arrow" onclick="sendQuestion()" title="发送">→</button>
               </div>
             </div>
           </div>
@@ -363,6 +418,10 @@
 
       function getApiKey() {
         return localStorage.getItem("medfuse_api_key") || "demo-key";
+      }
+
+      function openImagePicker() {
+        document.getElementById("imageFile").click();
       }
 
       function getRouteMode() {
