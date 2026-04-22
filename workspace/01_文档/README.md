@@ -72,6 +72,7 @@ CSV列规范：
 - 文本+结构化推理：`POST /infer`
 - 图片上传推理：`POST /infer_with_image`（上传说明随模块变化；`pipeline=mmc_net` 时含 Grad-CAM）
 - 自动路由推理：`POST /route_infer`（根据问题文本和是否上传影像自动分流到骨骼影像或坐姿占位模块，并返回路由原因与置信度）
+  - 支持 `route_mode`：`auto` / `force_bone` / `force_posture`，可由前端悬浮按钮快速切换
 - **坐姿占位（与当前 `active_module` 无关，始终挂载）**：`GET /posture/info`、`POST /posture/analyze`（详见 `docs/10_坐姿检测模块占位说明.md`）
 
 ### 接口安全（鉴权+限流）

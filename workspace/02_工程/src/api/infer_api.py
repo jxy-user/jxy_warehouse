@@ -119,6 +119,18 @@ def _route_query(text: str, has_image: bool) -> Tuple[str, str, float]:
     return "bone", reason, round(conf, 2)
 
 
+def _normalize_route_mode(route_mode: str) -> str:
+    mapping = {
+        "auto": "auto",
+        "force_bone": "force_bone",
+        "force_posture": "force_posture",
+        # 兼容前端可能传入的别名
+        "bone_first": "force_bone",
+        "posture_first": "force_posture",
+    }
+    return mapping.get((route_mode or "").strip().lower(), "auto")
+
+
 def _prepare_image_tensor(content: bytes, image_size: int) -> torch.Tensor:
     image = Image.open(io.BytesIO(content)).convert("L")
     image = image.resize((image_size, image_size))
@@ -303,11 +315,18 @@ async def posture_analyze(
 async def route_infer(
     text: str = Form(default="", description="用户问题文本"),
     struct_features: str = Form(default="", description="结构化特征，逗号分隔，可空"),
+    route_mode: str = Form(default="auto", description="路由模式：auto/force_bone/force_posture"),
     image_file: Optional[UploadFile] = File(None, description="可选影像文件"),
     _api_key: str = Depends(_auth_dep),
 ) -> dict:
+    route_mode_norm = _normalize_route_mode(route_mode)
     has_image = image_file is not None
-    route_module, reason, confidence = _route_query(text, has_image)
+    if route_mode_norm == "force_bone":
+        route_module, reason, confidence = "bone", "前端强制骨骼模块", 1.0
+    elif route_mode_norm == "force_posture":
+        route_module, reason, confidence = "posture_stub", "前端强制坐姿模块", 1.0
+    else:
+        route_module, reason, confidence = _route_query(text, has_image)
 
     parts = [x.strip() for x in struct_features.split(",") if x.strip()]
     if parts and len(parts) != cfg["data"]["num_struct_features"]:
@@ -328,6 +347,7 @@ async def route_infer(
         }
         return {
             "route_module": route_module,
+            "route_mode_used": route_mode_norm,
             "route_reason": reason,
             "route_confidence": confidence,
             "result": result,
@@ -337,6 +357,7 @@ async def route_infer(
     if PIPELINE != "mmc_net" or model is None:
         return {
             "route_module": route_module,
+            "route_mode_used": route_mode_norm,
             "route_reason": reason,
             "route_confidence": confidence,
             "错误": "当前 active_module 不是影像推理模块（mmc_net），无法执行骨骼路由。请切换到 bone 或 chest_mvp。",
@@ -349,6 +370,7 @@ async def route_infer(
         result = _run_mmc_image_infer(content, image_file.filename, text, struct_values)
     return {
         "route_module": route_module,
+        "route_mode_used": route_mode_norm,
         "route_reason": reason,
         "route_confidence": confidence,
         "result": result,
