@@ -6,14 +6,14 @@
     <title>灵枢AI医学影像问答</title>
     <style>
       :root {
-        --bg: #111317;
-        --sidebar: #161a21;
-        --panel: #1c212a;
-        --panel-soft: #252b36;
-        --text: #e9edf5;
-        --muted: #9aa4b7;
-        --primary: #5f7cff;
-        --border: #343c4a;
+        --bg: #050505;
+        --sidebar: #0b0b0b;
+        --panel: #0f0f0f;
+        --panel-soft: #161616;
+        --text: #efefef;
+        --muted: #9a9a9a;
+        --primary: #3f3f3f;
+        --border: #2a2a2a;
         --warn: #ff7a7a;
         --ok: #5dd39e;
       }
@@ -68,7 +68,7 @@
         cursor: pointer;
       }
       .visit-item.active {
-        border-color: #5b6a84;
+        border-color: #565656;
       }
       .main {
         padding: 16px 18px;
@@ -119,12 +119,12 @@
         gap: 8px;
       }
       .hello-tag {
-        border: 1px solid #3b465a;
+        border: 1px solid #363636;
         border-radius: 18px;
         padding: 8px 14px;
         font-size: 14px;
-        color: #b8c2d8;
-        background: #1b2230;
+        color: #c8c8c8;
+        background: #151515;
       }
       .chat {
         display: none;
@@ -140,8 +140,8 @@
         padding: 10px 12px;
         line-height: 1.6;
       }
-      .msg.ai { background: var(--panel-soft); border: 1px solid #3a4354; }
-      .msg.user { margin-left: auto; background: #2d3f70; }
+      .msg.ai { background: var(--panel-soft); border: 1px solid #2d2d2d; }
+      .msg.user { margin-left: auto; background: #2a2a2a; }
       .composer {
         position: absolute;
         left: 50%;
@@ -149,9 +149,9 @@
         width: min(860px, calc(100% - 44px));
         bottom: 18px;
         padding: 8px;
-        background: rgba(28, 33, 42, 0.8);
+        background: rgba(12, 12, 12, 0.88);
         backdrop-filter: blur(6px);
-        border: 1px solid #394254;
+        border: 1px solid #2f2f2f;
         border-radius: 16px;
         box-shadow: 0 14px 28px rgba(0, 0, 0, 0.34);
       }
@@ -161,12 +161,12 @@
         top: -10px;
         left: 10px;
         right: 10px;
-        border-top: 1px solid rgba(154, 164, 183, 0.35);
+        border-top: 1px solid rgba(160, 160, 160, 0.25);
       }
       .composer-box {
         border: 1px solid var(--border);
         border-radius: 10px;
-        background: #171b22;
+        background: #111111;
         padding: 8px;
       }
       textarea, input {
@@ -174,7 +174,7 @@
         border: 1px solid var(--border);
         border-radius: 10px;
         padding: 10px;
-        background: #1a1f27;
+        background: #121212;
         color: var(--text);
       }
       .composer-box textarea {
@@ -188,7 +188,7 @@
       .composer-footer {
         margin-top: 6px;
         padding-top: 6px;
-        border-top: 1px solid #2d3442;
+        border-top: 1px solid #272727;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -202,16 +202,25 @@
         border-radius: 10px;
         padding: 10px 12px;
         cursor: pointer;
+        transition: box-shadow 0.18s ease, border-color 0.18s ease, transform 0.08s ease;
+      }
+      button:active {
+        border-color: #7ea2ff;
+        box-shadow:
+          0 0 0 1px rgba(126, 162, 255, 0.45),
+          0 0 10px rgba(126, 162, 255, 0.35),
+          0 0 22px rgba(126, 162, 255, 0.2);
+        transform: translateY(0.5px) scale(0.995);
       }
       .primary { background: var(--primary); color: #fff; font-weight: 700; }
-      .ghost { background: #1a1f27; border-color: var(--border); color: var(--text); }
+      .ghost { background: #121212; border-color: var(--border); color: var(--text); }
       .icon-btn {
         width: 34px;
         height: 34px;
         padding: 0;
         border: 1px solid var(--border);
         border-radius: 8px;
-        background: #1a1f27;
+        background: #121212;
         color: var(--text);
         font-size: 18px;
         line-height: 1;
@@ -232,51 +241,46 @@
         gap: 8px;
       }
       .quick-tool {
-        border: 1px solid #4a5a80;
+        border: 1px solid #3d3d3d;
         border-radius: 16px;
         padding: 6px 12px;
         font-size: 12px;
-        color: #9fb7ff;
-        background: #1f2d4f;
+        color: #d3d3d3;
+        background: #171717;
       }
       .status { margin-top: 8px; color: var(--muted); font-size: 13px; }
       .high { color: var(--warn); font-weight: 700; }
       .low { color: var(--ok); font-weight: 700; }
       .heatmap { margin-top: 8px; max-width: 320px; border-radius: 10px; border: 1px solid var(--border); }
       .route-float {
-        position: fixed;
-        right: 24px;
-        bottom: 126px;
-        z-index: 99;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 8px;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 132px;
+        z-index: 80;
       }
       .route-panel {
-        display: none;
-        background: #1a1f27;
+        display: inline-flex;
+        gap: 8px;
+        background: rgba(17, 17, 17, 0.92);
         border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 8px;
-        min-width: 178px;
+        border-radius: 999px;
+        padding: 6px;
       }
-      .route-panel.show { display: block; }
       .route-opt {
-        width: 100%;
-        margin-top: 6px;
-        background: #252c37;
+        width: auto;
+        margin-top: 0;
+        background: #1b1b1b;
         color: var(--text);
-        border: 1px solid #384254;
-        padding: 8px 10px;
-        border-radius: 8px;
+        border: 1px solid #343434;
+        padding: 7px 14px;
+        border-radius: 999px;
         font-size: 12px;
-        text-align: left;
+        text-align: center;
       }
-      .route-opt:first-child { margin-top: 0; }
       .route-opt.active {
-        border-color: var(--primary);
-        background: #2b3860;
+        border-color: #5a5a5a;
+        background: #303030;
       }
       @media (max-width: 920px) {
         .layout { grid-template-columns: 1fr; }
@@ -290,10 +294,7 @@
           width: calc(100% - 20px);
           bottom: 10px;
         }
-        .route-float {
-          right: 10px;
-          bottom: 116px;
-        }
+        .route-float { bottom: 116px; }
       }
     </style>
   </head>
@@ -348,7 +349,6 @@
             <button id="routeBoneBtn" class="route-opt" onclick="setRouteMode('force_bone')">骨骼优先</button>
             <button id="routePostureBtn" class="route-opt" onclick="setRouteMode('force_posture')">坐姿优先</button>
           </div>
-          <button class="primary" onclick="toggleRoutePanel()">模块</button>
         </div>
       </section>
     </div>
@@ -447,12 +447,6 @@
           force_posture: "坐姿优先",
         };
         document.getElementById("statusText").textContent = "已切换路由模式：" + (textMap[mode] || "自动路由");
-        document.getElementById("routePanel").classList.remove("show");
-      }
-
-      function toggleRoutePanel() {
-        const panel = document.getElementById("routePanel");
-        panel.classList.toggle("show");
       }
 
       async function sendQuestion() {
