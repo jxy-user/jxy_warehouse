@@ -397,6 +397,32 @@
         document.getElementById("imageFile").click();
       }
 
+      /** 统一提取 FastAPI（detail）与业务字段（错误）中的可读说明 */
+      function formatApiFailureMessage(data, resp) {
+        if (data && typeof data.错误 === "string") return data.错误;
+        if (data && data.detail !== undefined) {
+          const d = data.detail;
+          if (Array.isArray(d))
+            return d.map((x) => (typeof x === "object" && x.msg != null ? x.msg : String(x))).join("；");
+          return String(d);
+        }
+        if (!resp.ok)
+          return "HTTP " + resp.status + (resp.statusText ? " " + resp.statusText : "");
+        return "分析失败";
+      }
+
+      function enrichNetworkErrorMessage(msg) {
+        const s = msg || "";
+        if (/Failed to fetch|NetworkError|load failed|network error/i.test(s))
+          return (
+            s +
+            "（常见原因：推理服务未启动、API 地址错误（当前 " +
+            getApiBaseUrl() +
+            "）、或 HTTPS 页面请求 HTTP 接口被浏览器拦截。可在 URL 加 ?api=你的服务根地址 或写入 localStorage medfuse_api_base_url）"
+          );
+        return s;
+      }
+
       function getRouteMode() {
         const mode = localStorage.getItem("medfuse_route_mode");
         if (!mode) return "auto";
@@ -453,8 +479,19 @@
             headers: { "X-API-Key": getApiKey() },
             body: fd,
           });
-          const data = await resp.json();
-          if (!resp.ok || data.错误) throw new Error(data.错误 || "分析失败");
+          const raw = await resp.text();
+          let data = {};
+          try {
+            data = raw ? JSON.parse(raw) : {};
+          } catch {
+            throw new Error(
+              "服务器返回非 JSON（HTTP " +
+                resp.status +
+                "）。请确认访问的是 FastAPI 根地址而非静态页，且服务已启动。"
+            );
+          }
+          if (!resp.ok || data.错误)
+            throw new Error(formatApiFailureMessage(data, resp));
 
           let html = `<div>自动路由：${data.route_module || "未知"}（置信度：${data.route_confidence ?? "N/A"}）</div>`;
           if (data.route_mode_used) {
@@ -487,8 +524,9 @@
           addAi(html, true);
           statusEl.textContent = "分析完成。";
         } catch (e) {
-          addAi("调用失败：" + e.message);
-          statusEl.textContent = "调用失败。";
+          const msg = enrichNetworkErrorMessage(e.message || String(e));
+          addAi("调用失败：" + msg);
+          statusEl.textContent = "调用失败，请查看上方具体原因。";
         }
       }
 
