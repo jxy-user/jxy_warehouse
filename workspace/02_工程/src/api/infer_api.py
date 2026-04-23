@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 from fastapi import Depends, FastAPI, File, Form, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from pydantic import BaseModel
 
@@ -42,6 +43,7 @@ app = FastAPI(
 )
 heatmap_dir = Path(cfg["infer"]["heatmap_dir"])
 heatmap_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/heatmaps", StaticFiles(directory=str(heatmap_dir.resolve())), name="heatmaps")
 cors_cfg = cfg.get("cors", {})
 app.add_middleware(
     CORSMiddleware,
@@ -223,9 +225,11 @@ def _save_gradcam_heatmap(image_tensor: torch.Tensor, cam: np.ndarray, file_stem
     base_rgb = np.stack([gray, gray, gray], axis=-1)
     overlay = (0.6 * base_rgb + 0.4 * heat_color).astype("uint8")
     heatmap = Image.fromarray(overlay, mode="RGB")
-    out_path = heatmap_dir / f"{file_stem}_gradcam.png"
+    filename = f"{file_stem}_gradcam.png"
+    out_path = heatmap_dir / filename
     heatmap.save(out_path)
-    return str(out_path).replace("\\", "/")
+    # 返回可被浏览器直接访问的静态 URL 路径，而不是本地磁盘路径。
+    return f"/heatmaps/{filename}"
 
 
 @app.get("/health")

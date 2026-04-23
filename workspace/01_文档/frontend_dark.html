@@ -399,8 +399,17 @@
         box.scrollTop = box.scrollHeight;
       }
 
+      function resolveMediaUrl(path) {
+        const p = (path || "").trim();
+        if (!p) return "";
+        if (/^(https?:)?\/\//i.test(p) || p.startsWith("data:") || p.startsWith("blob:")) return p;
+        const base = getApiBaseUrl();
+        if (p.startsWith("/")) return base + p;
+        return base + "/" + p.replace(/^\/+/, "");
+      }
+
       function buildImageCompareHtml(file, heatmapPath) {
-        const safeHeatmap = (heatmapPath || "").replaceAll("\\\\", "/");
+        const safeHeatmap = resolveMediaUrl((heatmapPath || "").replaceAll("\\\\", "/"));
         const now = Date.now();
         let html = `<div class="img-compare">`;
         if (file) {
