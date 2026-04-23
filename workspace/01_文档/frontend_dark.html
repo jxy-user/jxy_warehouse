@@ -233,6 +233,31 @@
       .high { color: var(--warn); font-weight: 700; }
       .low { color: var(--ok); font-weight: 700; }
       .heatmap { margin-top: 8px; max-width: 320px; border-radius: 10px; border: 1px solid var(--border); }
+      .img-compare {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 10px;
+      }
+      .img-card {
+        background: #151515;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px;
+      }
+      .img-card .cap {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      .img-card img {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #3a3a3a;
+        object-fit: contain;
+        max-height: 280px;
+        background: #0f0f0f;
+      }
       .route-float {
         position: absolute;
         left: 50%;
@@ -372,6 +397,21 @@
         const box = document.getElementById("chatBox");
         box.appendChild(node);
         box.scrollTop = box.scrollHeight;
+      }
+
+      function buildImageCompareHtml(file, heatmapPath) {
+        const safeHeatmap = (heatmapPath || "").replaceAll("\\\\", "/");
+        const now = Date.now();
+        let html = `<div class="img-compare">`;
+        if (file) {
+          const localSrc = URL.createObjectURL(file);
+          html += `<div class="img-card"><div class="cap">上传原图</div><img src="${localSrc}" alt="上传原图" /></div>`;
+        }
+        if (safeHeatmap) {
+          html += `<div class="img-card"><div class="cap">模型热图</div><img src="${safeHeatmap}?t=${now}" alt="模型热图" /></div>`;
+        }
+        html += `</div>`;
+        return html;
       }
 
       function getApiBaseUrl() {
@@ -517,7 +557,10 @@
             html += `<div class="${score >= 0.5 ? "high" : "low"}">风险提示：${score >= 0.5 ? "较高风险" : "较低风险"}</div>`;
             html += `<div>主要类别：${top[0]}</div><div>风险分数：${score.toFixed(4)}</div>`;
             if (result.热图路径) {
-              html += `<img class="heatmap" src="${result.热图路径.replaceAll("\\\\", "/")}?t=${Date.now()}" alt="热图" />`;
+              html += buildImageCompareHtml(file, result.热图路径);
+              html += `<div>热图解释：颜色更亮的区域代表模型关注更高，可与原图对照查看可疑区域；该结果仅作辅助参考。</div>`;
+            } else if (file) {
+              html += `<div>已上传影像，但当前返回未包含热图路径，请检查后端是否启用热图产出。</div>`;
             }
             if (result.说明) html += `<div>${result.说明}</div>`;
           }
