@@ -434,21 +434,48 @@
         return html;
       }
 
-      function buildFractureAdviceHtml(score) {
-        const riskText = score >= 0.5 ? "当前风险分数偏高，建议尽快线下就诊复核。" : "当前风险分数偏低，但仍建议结合症状与医生意见判断。";
+      function buildTcmAdviceHtml(result, score) {
+        const identify = result.辨识结果 || {};
+        const advice = Array.isArray(result.调养建议) ? result.调养建议 : [];
+        const remind =
+          result.就医提醒 ||
+          (score >= 0.5 ? "当前风险偏高，建议尽快线下就医复核。" : "建议结合原片与症状变化持续观察。");
+        const disclaimer =
+          result.免责声明 || "本系统仅提供健康管理辅助建议，不构成医疗诊断或处方依据。";
+        const redFlag = result.红旗预警 === true;
+        const adviceHtml =
+          advice.length > 0
+            ? advice.map((x, idx) => `<div>${idx + 1}) ${x}</div>`).join("")
+            : `<div>1) 保持规律作息，避免久坐久站与过度负重；</div><div>2) 建议结合线下医师评估做个体化干预。</div>`;
         return `
           <div class="advice">
-            <div class="title">治疗方案建议（非诊断，仅供分诊参考）</div>
-            <div>1) 先行固定患肢并减少负重，避免自行复位或按摩；</div>
-            <div>2) 尽快前往骨科/急诊进行影像复查（必要时补充CT/MRI）；</div>
-            <div>3) 由医生评估保守固定（石膏/支具）或手术治疗。</div>
+            <div class="title">中医辅助辨识结果</div>
+            <div>类别倾向：${identify.类别倾向 || "骨骼风险倾向（辅助）"}</div>
+            <div>证候倾向：${identify.中医证候倾向 || "待结合面诊进一步辨证"}</div>
+            <div>风险等级：${identify.风险等级 || (score >= 0.5 ? "较高" : "较低")}</div>
           </div>
           <div class="advice">
-            <div class="title">康复建议</div>
-            <div>1) 急性期遵循RICE原则：休息、冰敷、加压、抬高；</div>
-            <div>2) 疼痛缓解后在医生/康复师指导下逐步恢复关节活动和肌力训练；</div>
-            <div>3) 复查确认骨痂与愈合进展前，避免剧烈运动与过早负重。</div>
-            <div style="margin-top:6px;color:#c9c9c9;">提示：${riskText}</div>
+            <div class="title">调养建议</div>
+            ${adviceHtml}
+          </div>
+          <div class="advice">
+            <div class="title">就医提醒${redFlag ? "（红旗预警）" : ""}</div>
+            <div>${remind}</div>
+            <div style="margin-top:6px;color:#c9c9c9;">${disclaimer}</div>
+          </div>
+        `;
+      }
+
+      function buildOnlyTcmAdviceHtml(result) {
+        const advice = Array.isArray(result.调养建议) ? result.调养建议 : [];
+        const adviceHtml =
+          advice.length > 0
+            ? advice.map((x, idx) => `<div>${idx + 1}) ${x}</div>`).join("")
+            : `<div>1) 当前未返回个体化调养建议，请结合线下中医师辨证结果执行。</div>`;
+        return `
+          <div class="advice">
+            <div class="title">中医调养建议</div>
+            ${adviceHtml}
           </div>
         `;
       }
@@ -572,41 +599,8 @@
           if (!resp.ok || data.错误)
             throw new Error(formatApiFailureMessage(data, resp));
 
-          let html = `<div>自动路由：${data.route_module || "未知"}（置信度：${data.route_confidence ?? "N/A"}）</div>`;
-          if (data.route_mode_used) {
-            const modeMap = {
-              auto: "自动路由",
-              force_bone: "骨骼优先",
-              force_posture: "坐姿优先",
-            };
-            html += `<div>路由模式：${modeMap[data.route_mode_used] || data.route_mode_used}</div>`;
-          }
-          if (data.route_reason) html += `<div>路由原因：${data.route_reason}</div>`;
-
           const result = data.result || {};
-          if (result.行为风险分数) {
-            const scores = result.行为风险分数 || {};
-            const top = Object.entries(scores).sort((a, b) => b[1] - a[1])[0] || ["未知", 0];
-            html += `<div>坐姿模块：${result.说明 || "占位模块返回"}</div>`;
-            html += `<div>主要行为维度：${top[0]}</div><div>风险分数：${Number(top[1]).toFixed(4)}</div>`;
-          } else {
-            const scores = result.风险分数 || {};
-            const top = Object.entries(scores).sort((a, b) => b[1] - a[1])[0] || ["未知", 0];
-            const score = Number(top[1]);
-            const displayCategory = data.route_module === "bone" ? "骨折" : top[0];
-            html += `<div class="${score >= 0.5 ? "high" : "low"}">风险提示：${score >= 0.5 ? "较高风险" : "较低风险"}</div>`;
-            html += `<div>主要类别：${displayCategory}</div><div>风险分数：${score.toFixed(4)}</div>`;
-            if (result.热图路径) {
-              html += buildImageCompareHtml(file, result.热图路径);
-              html += `<div>热图解释：颜色更亮的区域代表模型关注更高，可与原图对照查看可疑区域；该结果仅作辅助参考。</div>`;
-            } else if (file) {
-              html += `<div>已上传影像，但当前返回未包含热图路径，请检查后端是否启用热图产出。</div>`;
-            }
-            if (data.route_module === "bone") {
-              html += buildFractureAdviceHtml(score);
-            }
-            if (result.说明) html += `<div>${result.说明}</div>`;
-          }
+          const html = buildOnlyTcmAdviceHtml(result);
           addAi(html, true);
           statusEl.textContent = "分析完成。";
         } catch (e) {

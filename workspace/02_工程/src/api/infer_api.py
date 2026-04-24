@@ -78,6 +78,67 @@ BONE_KEYWORDS = {
 POSTURE_KEYWORDS = {
     "坐姿", "低头", "驼背", "歪", "歪斜", "久坐", "肩颈", "颈椎", "写作业", "屏幕", "视距", "坐太久", "姿势",
 }
+RED_FLAG_KEYWORDS = {
+    "剧痛", "持续加重", "夜间痛", "麻木", "无力", "无法站立", "无法行走", "活动受限", "外伤后畸形", "发热",
+}
+TCM_DISCLAIMER = "本系统仅提供中医健康管理辅助建议，不构成医疗诊断或处方依据，不能替代执业医师面诊。"
+DEFAULT_TCM_ADVICE = [
+    "起居调养：避免久坐久站与受寒，保持规律作息，注意局部保暖。",
+    "饮食建议：清淡均衡，少辛辣油腻，适当补充蛋白与富钙食物。",
+    "运动建议：在疼痛可耐受范围内进行轻柔拉伸与关节活动，避免剧烈负重。",
+]
+TCM_TEMPLATE_CONFIG = {
+    "tcm_lowback": {
+        "keywords": ["腰疼", "腰痛", "腰酸", "久坐腰酸", "闪腰", "腰背痛"],
+        "category": "腰部不适倾向",
+        "syndrome": "气血不畅、筋脉失和倾向",
+        "advice": [
+            "可在中医师辨证后选用推拿或针灸进行调理，缓解腰部紧张与不适。",
+            "每30-40分钟起身活动2-3分钟，避免久坐与突然负重。",
+            "疼痛缓解后逐步进行腰背轻柔牵伸与核心稳定训练。",
+        ],
+    },
+    "tcm_knee": {
+        "keywords": ["膝盖", "膝关节", "膝痛", "上下楼痛", "蹲起痛"],
+        "category": "膝关节不适倾向",
+        "syndrome": "肝肾不足、筋骨失养倾向",
+        "advice": [
+            "以减负与温养为主，避免频繁上下楼和深蹲动作。",
+            "可在中医师指导下采用针灸或推拿，改善膝关节不适。",
+            "进行低冲击康复练习，循序渐进恢复关节活动度。",
+        ],
+    },
+    "tcm_neck": {
+        "keywords": ["颈椎", "颈部", "脖子", "落枕", "颈项僵硬"],
+        "category": "颈项不适倾向",
+        "syndrome": "气血不畅、经络不舒倾向",
+        "advice": [
+            "可在中医师辨证下配合针灸或推拿缓解颈项僵硬。",
+            "减少长时间低头，保持屏幕与视线平齐，避免颈部受寒。",
+            "每日进行颈肩轻柔拉伸，改善局部气血运行。",
+        ],
+    },
+    "tcm_shoulder_neck": {
+        "keywords": ["肩颈", "肩膀僵硬", "肩背紧", "肩酸", "斜方肌酸痛"],
+        "category": "肩颈紧张倾向",
+        "syndrome": "气滞血瘀、筋脉拘急倾向",
+        "advice": [
+            "可进行温和推拿或艾灸，帮助缓解肩颈肌群紧张。",
+            "避免久坐耸肩与含胸姿势，注意肩背保暖。",
+            "配合肩胛稳定训练与胸椎伸展，改善体态负担。",
+        ],
+    },
+    "tcm_posture": {
+        "keywords": ["驼背", "体态", "含胸", "圆肩", "坐姿", "姿势不好"],
+        "category": "体态失衡倾向",
+        "syndrome": "筋脉失和倾向",
+        "advice": [
+            "建议以姿势矫正为主，保持脊柱中立位，减少含胸低头。",
+            "每30-40分钟起身活动，进行颈肩腰背放松训练。",
+            "可配合八段锦等中医导引练习，逐步改善体态。",
+        ],
+    },
+}
 
 
 def _auth_dep(request: Request) -> str:
@@ -95,6 +156,15 @@ def _stub_infer_response(kind: str) -> dict:
         "说明": "坐姿占位模块（pipeline=posture_stub）：关键点估计与规则引擎未接入，分数固定为占位。请改用 bone/chest_mvp 进行影像推理，或使用 /posture/analyze。",
         "pipeline": PIPELINE,
         "占位类型": kind,
+        "辨识结果": {
+            "类别倾向": "筋骨失养倾向（占位）",
+            "中医证候倾向": "待结合面诊进一步辨证",
+            "风险等级": "待评估",
+        },
+        "调养建议": list(DEFAULT_TCM_ADVICE),
+        "就医提醒": "如症状持续加重或出现剧痛、麻木、活动受限，请及时线下就医。",
+        "免责声明": TCM_DISCLAIMER,
+        "红旗预警": False,
     }
 
 
@@ -140,6 +210,50 @@ def _prepare_image_tensor(content: bytes, image_size: int) -> torch.Tensor:
     return arr.unsqueeze(0).unsqueeze(0)
 
 
+def _contains_red_flag(text: str) -> bool:
+    content = (text or "").lower()
+    return any(k in content for k in RED_FLAG_KEYWORDS)
+
+
+def _select_tcm_template(text: str) -> str:
+    content = (text or "").lower()
+    priority = ["tcm_lowback", "tcm_knee", "tcm_neck", "tcm_shoulder_neck", "tcm_posture"]
+    for key in priority:
+        cfg_item = TCM_TEMPLATE_CONFIG[key]
+        if any(k in content for k in cfg_item["keywords"]):
+            return key
+    return "tcm_general"
+
+
+def _build_tcm_guidance(top_label: str, score: float, text: str) -> dict:
+    red_flag = _contains_red_flag(text)
+    template_id = _select_tcm_template(text)
+    level = "较高" if score >= 0.5 else "较低"
+    cfg_item = TCM_TEMPLATE_CONFIG.get(template_id, {})
+    syndrome = cfg_item.get("syndrome", "肝肾不足、筋骨失养倾向")
+    category = cfg_item.get("category", top_label)
+    advice = list(cfg_item.get("advice", DEFAULT_TCM_ADVICE))
+    if score >= 0.5:
+        advice.append("建议尽快至正规医疗机构复核影像与体征，再由医生制定个体化方案。")
+
+    remind = "建议结合原片、症状变化和线下体格检查综合判断。"
+    if red_flag:
+        remind = "检测到红旗症状关键词，请立即线下就医，不建议仅依赖线上建议。"
+
+    return {
+        "辨识结果": {
+            "类别倾向": category,
+            "中医证候倾向": syndrome,
+            "风险等级": level,
+        },
+        "调养建议": advice,
+        "就医提醒": remind,
+        "免责声明": TCM_DISCLAIMER,
+        "红旗预警": red_flag,
+        "模板ID": template_id,
+    }
+
+
 def _run_mmc_json_infer(text: str, struct_values: List[float]) -> dict:
     assert model is not None
     text_ids = tokenize_text_to_ids(text, cfg["model"]["text_max_len"], cfg["model"]["text_vocab_size"])
@@ -149,7 +263,11 @@ def _run_mmc_json_infer(text: str, struct_values: List[float]) -> dict:
     with torch.no_grad():
         logits = model(image, text_ids, struct)
         probs = torch.sigmoid(logits).squeeze(0).tolist()
-    return {"风险分数": dict(zip(labels, probs))}
+    top_idx = int(np.argmax(probs))
+    top_label = labels[top_idx]
+    out = {"风险分数": dict(zip(labels, probs))}
+    out.update(_build_tcm_guidance(top_label=top_label, score=float(probs[top_idx]), text=text))
+    return out
 
 
 def _run_mmc_image_infer(content: bytes, filename: str, text: str, struct_values: List[float]) -> dict:
@@ -169,12 +287,14 @@ def _run_mmc_image_infer(content: bytes, filename: str, text: str, struct_values
     tip = f"已生成Grad-CAM热图，当前倾向类别: {labels[target_idx]}"
     if suffix:
         tip += f"（{suffix}）"
-    return {
+    out = {
         "文件名": filename,
         "风险分数": dict(zip(labels, probs)),
         "热图路径": heatmap_path,
         "说明": tip,
     }
+    out.update(_build_tcm_guidance(top_label=labels[target_idx], score=float(probs[target_idx]), text=text))
+    return out
 
 
 def _generate_gradcam(
@@ -312,6 +432,19 @@ async def posture_analyze(
         "行为风险分数": {name: 0.0 for name in posture_labels},
         "说明": "占位响应：未运行姿态估计。后续将接入关键点检测与久坐/低头等规则评分。",
         "pipeline": posture_cfg.get("pipeline"),
+        "辨识结果": {
+            "类别倾向": "姿势失衡倾向（占位）",
+            "中医证候倾向": "筋脉失和倾向",
+            "风险等级": "待评估",
+        },
+        "调养建议": [
+            "保持脊柱中立位，减少含胸低头姿势，学习时注意桌椅高度匹配。",
+            "每30-40分钟起身活动2-3分钟，避免久坐不动。",
+            "可进行八段锦或轻柔牵伸练习，循序渐进，不可急于求成。",
+        ],
+        "就医提醒": "本结果为辅助建议，若症状持续或加重，请及时线下就医。",
+        "免责声明": TCM_DISCLAIMER,
+        "红旗预警": False,
     }
 
 
@@ -348,6 +481,19 @@ async def route_infer(
             "行为风险分数": {name: 0.0 for name in posture_labels},
             "说明": "自动路由到坐姿占位模块：当前返回占位分数（全0）。",
             "pipeline": posture_cfg.get("pipeline"),
+            "辨识结果": {
+                "类别倾向": "姿势失衡倾向（占位）",
+                "中医证候倾向": "筋脉失和倾向",
+                "风险等级": "待评估",
+            },
+            "调养建议": [
+                "调整坐姿：头颈中正、双肩放松，屏幕与视线平齐。",
+                "每30-40分钟起身活动，配合颈肩腰背轻柔拉伸。",
+                "日常调养宜循序渐进，避免长期低头与单侧受力。",
+            ],
+            "就医提醒": "如出现持续疼痛、麻木或活动受限，请及时线下就医。",
+            "免责声明": TCM_DISCLAIMER,
+            "红旗预警": _contains_red_flag(text),
         }
         return {
             "route_module": route_module,
